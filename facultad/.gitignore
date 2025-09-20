@@ -3,10 +3,6 @@
 db.sqlite3
 
 
-**/migrations/*.pyc
-**/migrations/__pycache__/
-
-
 __pycache__/
 *.py[cod]
 *$py.class
