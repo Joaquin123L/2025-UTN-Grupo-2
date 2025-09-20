@@ -1,0 +1,30 @@
+{% load static %}
+
+<header class="navbar">
+  <div class="navbar__inner container-narrow">
+    <a class="navbar__brand" href="/">
+      <img class="navbar__logo" src="{% static 'img/pasaLaData.jpeg' %}" alt="Pasa la Data UTN">
+    </a>
+
+    {% if request.user.is_authenticated %}
+      {% url 'people:profile' request.user.pk as profile_url %}
+      <div class="navbar__right">
+        <button class="icon-btn" aria-label="Abrir menú">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <a class="avatar" href="{{ profile_url|default:'#' }}" title="Mi perfil">
+          <span class="avatar__fallback">
+            {{ request.user.get_short_name|default:request.user.username|slice:":1"|upper }}
+          </span>
+        </a>
+      </div>
+    {% else %}
+      <div class="navbar__right">
+        <a class="btn btn-light btn-sm" href="{% url 'people:register' %}">Registrate</a>
+        <a class="btn btn-light btn-sm" href="{% url 'people:login' %}">Iniciar sesión</a>
+      </div>
+    {% endif %}
+  </div>
+</header>

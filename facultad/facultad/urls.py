@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path , include
 from django.shortcuts import redirect
+from django.views.generic import TemplateView 
 
 
 
@@ -25,5 +26,5 @@ urlpatterns = [
     path("people/", include("people.urls")),
     path("", lambda request: redirect("people:login")),
     path("academics/", include("academics.urls")),
-
+    path("navbar-test/", TemplateView.as_view(template_name="navbar_test.html"), name="navbar-test"),
 ]
