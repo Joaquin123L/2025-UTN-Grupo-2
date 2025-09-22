@@ -10,6 +10,6 @@ class User(AbstractUser):
     rol = models.CharField(max_length=3, choices=Role.choices)
     legajo = models.CharField(max_length=20, unique=True, null=True, blank=True)  # solo alumnos
 
-    profile_image = models.ImageField(
+    imagen_perfil = models.ImageField(
         upload_to="profiles/", null=True, blank=True
     )
