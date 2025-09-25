@@ -1,6 +1,8 @@
 # academics/models.py
 from django.conf import settings
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 Usuario = settings.AUTH_USER_MODEL
 
@@ -59,3 +61,130 @@ class MateriaComisionAnio(models.Model):
 
     def __str__(self):
         return f"{self.materia} — {self.comision} [{self.anio}]"
+
+class Resena(models.Model):
+    alumno = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="resenas")
+    mca = models.ForeignKey("academics.MateriaComisionAnio", on_delete=models.CASCADE, related_name="resenas")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["alumno", "mca"], name="uq_resena_alumno_mca"),
+        ]
+        indexes = [
+            models.Index(fields=["mca"]),
+            models.Index(fields=["alumno", "mca"]),
+        ]
+
+    def __str__(self):
+        return f"Reseña de {self.alumno} sobre {self.mca}"
+
+
+class ResenaItem(models.Model):
+    class Target(models.TextChoices):
+        MATERIA = "MATERIA", "Materia"
+        COMISION = "COMISION", "Comisión"
+        TITULAR = "TITULAR", "Profesor Titular"
+        JTP     = "JTP",     "Jefe de Trabajos Prácticos"
+
+    resena = models.ForeignKey(Resena, on_delete=models.CASCADE, related_name="items")
+    target_type = models.CharField(max_length=16, choices=Target.choices)
+
+    puntuacion = models.PositiveSmallIntegerField()
+    comentario = models.TextField(blank=True)
+
+    materia = models.ForeignKey(
+        "academics.Materia", on_delete=models.CASCADE, null=True, blank=True, related_name="resenas_items"
+    )
+    comision = models.ForeignKey(
+        "academics.Comision", on_delete=models.CASCADE, null=True, blank=True, related_name="resenas_items"
+    )
+    titular = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, null=True, blank=True, related_name="resenas_como_titular"
+    )
+    jtp = models.ForeignKey(
+        Usuario, on_delete=models.CASCADE, null=True, blank=True, related_name="resenas_como_jtp"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["resena", "target_type"], name="uq_item_por_tipo_por_resena"),
+
+            models.CheckConstraint(
+                check=Q(puntuacion__gte=1) & Q(puntuacion__lte=5),
+                name="chk_item_puntuacion_1_5"
+            ),
+
+            models.CheckConstraint(
+                check=(
+                    (Q(target_type="MATERIA") & Q(materia__isnull=False) &
+                     Q(comision__isnull=True) & Q(titular__isnull=True) & Q(jtp__isnull=True))
+                    | ~Q(target_type="MATERIA")
+                ),
+                name="chk_item_materia_fk"
+            ),
+
+            models.CheckConstraint(
+                check=(
+                    (Q(target_type="COMISION") & Q(comision__isnull=False) &
+                     Q(materia__isnull=True) & Q(titular__isnull=True) & Q(jtp__isnull=True))
+                    | ~Q(target_type="COMISION")
+                ),
+                name="chk_item_comision_fk"
+            ),
+
+            models.CheckConstraint(
+                check=(
+                    (Q(target_type="TITULAR") & Q(titular__isnull=False) &
+                     Q(materia__isnull=True) & Q(comision__isnull=True) & Q(jtp__isnull=True))
+                    | ~Q(target_type="TITULAR")
+                ),
+                name="chk_item_titular_fk"
+            ),
+
+            models.CheckConstraint(
+                check=(
+                    (Q(target_type="JTP") & Q(jtp__isnull=False) &
+                     Q(materia__isnull=True) & Q(comision__isnull=True) & Q(titular__isnull=True))
+                    | ~Q(target_type="JTP")
+                ),
+                name="chk_item_jtp_fk"
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["target_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.target_type} [{self.puntuacion}]"
+
+    def clean(self):
+        mca = self.resena.mca
+
+        if self.target_type == self.Target.MATERIA:
+            if not self.materia_id or self.materia_id != mca.materia_id:
+                raise ValidationError("La materia del item no coincide con la de la cursada (MCA).")
+
+        elif self.target_type == self.Target.COMISION:
+            if not self.comision_id or self.comision_id != mca.comision_id:
+                raise ValidationError("La comisión del item no coincide con la de la cursada (MCA).")
+
+        elif self.target_type == self.Target.TITULAR:
+            if not self.titular_id or self.titular_id != (mca.titular_id or None):
+                raise ValidationError("El TITULAR del item no coincide con el TITULAR de la cursada (MCA).")
+            if self.jtp_id is not None:
+                raise ValidationError("En un item TITULAR, el campo JTP debe ser nulo.")
+
+        elif self.target_type == self.Target.JTP:
+            if not self.jtp_id or self.jtp_id != (mca.jtp_id or None):
+                raise ValidationError("El JTP del item no coincide con el JTP de la cursada (MCA).")
+            if self.titular_id is not None:
+                raise ValidationError("En un item JTP, el campo TITULAR debe ser nulo.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
