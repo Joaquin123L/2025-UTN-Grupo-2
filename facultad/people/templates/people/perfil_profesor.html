@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Perfil del Profesor — {{ profesor.get_full_name|default:profesor.username }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'people/css/perfilprofesor.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="pp-container">
+
+  <!-- HEADER -->
+  <section class="pp-header">
+    <div class="pp-avatar">
+      {% if profesor.imagen_perfil %}
+  <img src="{{ profesor.imagen_perfil.url }}" alt="{{ profesor.get_full_name|default:profesor.username }}">
+{% else %}
+  <img src="{% static 'people/inge.jpg' %}" alt="{{ profesor.get_full_name|default:profesor.username }}">
+{% endif %}
+
+    </div>
+
+    <div class="pp-headinfo">
+      <h1 class="pp-name">{{ profesor.get_full_name|default:profesor.username }}</h1>
+    </div>
+
+    <div class="pp-meta">
+      <div class="pp-line">
+        <span class="pp-field">Materia/s:</span>
+        <span class="pp-list">
+          {% for mid, mnombre in materias %}
+            <a href="#" class="pp-link">{{ mnombre }}</a>{% if not forloop.last %}, {% endif %}
+          {% empty %}
+            <span class="pp-empty">Sin materias</span>
+          {% endfor %}
+        </span>
+      </div>
+
+      <div class="pp-line">
+        <span class="pp-field">Comisiones:</span>
+        <span class="pp-list">
+          {% for cid, cnombre, anio in comisiones %}
+            <a href="#" class="pp-link">{{ cnombre }}</a>{% if not forloop.last %}, {% endif %}
+          {% empty %}
+            <span class="pp-empty">Sin comisiones</span>
+          {% endfor %}
+        </span>
+      </div>
+
+      <div class="pp-rating-row">
+        <span class="pp-score">{{ rating.score }}</span>
+        <span class="pp-stars-pill">
+          <span class="pp-stars" aria-label="rating">
+            <i>★</i><i>★</i><i>★</i><i>★</i><i class="off">★</i>
+          </span>
+        </span>
+        <span class="pp-opiniones">{{ rating.count_text }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMENTARIOS -->
+  <section class="pp-comments">
+    <div class="pp-comments-head">
+      <h2>Comentarios <span class="pp-count">{{ rating.count_text }}</span></h2>
+      <button class="pp-filter">Filtrar <span class="caret">▾</span></button>
+    </div>
+
+    <div class="pp-comments-box">
+      {% for c in comentarios %}
+        <article class="pp-comment">
+          <div class="pp-stars-badge">
+            {% for _ in "12345" %}
+              {% if forloop.counter <= c.estrellas %}<i>★</i>{% else %}<i class="off">★</i>{% endif %}
+            {% endfor %}
+          </div>
+          <p class="pp-comment-text">{{ c.texto }}</p>
+          <time class="pp-date">{{ c.fecha }}</time>
+        </article>
+      {% empty %}
+        <div class="pp-no-comments">Todavía no hay comentarios.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

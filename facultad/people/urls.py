@@ -12,4 +12,5 @@ urlpatterns = [
     path("register/", views.register, name="register"),
     path("olvide-clave/", views.olvideClave, name="olvideClave"),
     path("alta-profesor/", views.altaProfesor, name="altaProfesor"),
+    path("profesor/<str:username>/", views.perfil_profesor, name="perfil_profesor"),
 ]

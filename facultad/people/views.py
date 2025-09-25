@@ -1,7 +1,10 @@
 import json
 from django.contrib.auth import login, authenticate
 from .forms import UserCreationForm
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Q
+from people.models import User
+from academics.models import MateriaComisionAnio
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
@@ -74,3 +77,50 @@ def altaProfesor(request):
         else:
             messages.error(request, "Email y legajo son obligatorios.")
     return render(request, "people/login.html")
+
+def perfil_profesor(request, username):
+    profesor = get_object_or_404(User, username=username, rol="PRO")
+
+    relaciones = (
+        MateriaComisionAnio.objects
+        .filter(Q(titular=profesor) | Q(jtp=profesor) | Q(ayudante=profesor))
+        .select_related("materia", "comision")
+        .order_by("materia__nombre", "comision__nombre", "anio")
+    )
+
+    materias = (
+        relaciones.values_list("materia__id", "materia__nombre")
+        .distinct()
+        .order_by("materia__nombre")
+    )
+    comisiones = (
+        relaciones.values_list("comision__id", "comision__nombre", "anio")
+        .distinct()
+        .order_by("comision__nombre", "anio")
+    )
+
+    rating = {"score": 4.3, "count_text": "1,2 k opiniones"}
+
+    comentarios = [
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+        {"estrellas": 4, "texto": "Da la materia para el orto, dice una cosa y hace otra, yo la tuve en am2", "fecha": "14/08/2025"},
+    ]
+
+    return render(
+        request,
+        "people/perfil_profesor.html",
+        {
+            "profesor": profesor,
+            "relaciones": relaciones,
+            "materias": materias,
+            "comisiones": comisiones,
+            "rating": rating,
+            "comentarios": comentarios,
+        },
+    )
