@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ materia.nombre }} — Comisión {{ comision.nombre }} ({{ anio }}){% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'people/css/perfilprofesor.css' %}">
+<style>
+  .pp-stars, .pp-stars-pill, .pp-stars-badge { pointer-events: none; }
+  .pp-comment a { pointer-events: none; }
+  .pp-comment { cursor: default; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pp-container">
+  <section class="pp-header">
+    <div class="pp-avatar">
+      <img src="{% static 'people/inge.jpg' %}" alt="{{ materia.nombre }}">
+    </div>
+
+    <div class="pp-headinfo">
+      <h1 class="pp-name">Comisión {{ comision.nombre }} — {{ anio }}</h1>
+      <div style="margin-top:4px;">
+        <span class="pp-stars-pill" title="Comisión">
+          {{ materia.nombre }}
+        </span>
+      </div>
+    </div>
+
+    <div class="pp-meta">
+      <!-- Teoría (Titular) -->
+      <div class="pp-line">
+        <span class="pp-field">Teoría:</span>
+        <span class="pp-list">
+          {% if titular %}
+            <a class="pp-link" href="{% url 'people:perfil_profesor' titular.username %}">
+              {{ titular.get_full_name|default:titular.username }}
+            </a>
+          {% else %}
+            <span class="pp-empty">Sin asignar</span>
+          {% endif %}
+        </span>
+      </div>
+
+      <!-- Práctica (JTP) -->
+      <div class="pp-line">
+        <span class="pp-field">Práctica:</span>
+        <span class="pp-list">
+          {% if jtp %}
+            <a class="pp-link" href="{% url 'people:perfil_profesor' jtp.username %}">
+              {{ jtp.get_full_name|default:jtp.username }}
+            </a>
+          {% else %}
+            <span class="pp-empty">Sin asignar</span>
+          {% endif %}
+        </span>
+      </div>
+
+      <!-- (Se eliminó el bloque "Comisiones") -->
+
+      <div class="pp-rating-row">
+        <span class="pp-score">{{ rating.score }}</span>
+        <span class="pp-stars-pill">
+          <span class="pp-stars" aria-label="rating">
+            {% for i in "12345" %}
+              {% if forloop.counter <= rating.full_stars %}
+                <i>★</i>
+              {% else %}
+                <i class="off">★</i>
+              {% endif %}
+            {% endfor %}
+          </span>
+        </span>
+        <span class="pp-opiniones">{{ rating.count_text }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="pp-comments">
+    <div class="pp-comments-head">
+      <h2>Comentarios <span class="pp-count">{{ rating.count_text }}</span></h2>
+      <button class="pp-filter">Filtrar <span class="caret">▾</span></button>
+    </div>
+    <div class="pp-comments-box">
+      {% for c in comentarios %}
+        <article class="pp-comment">
+          <div class="pp-stars-badge">
+            {% for _ in "12345" %}
+              {% if forloop.counter <= c.estrellas %}<i>★</i>{% else %}<i class="off">★</i>{% endif %}
+            {% endfor %}
+          </div>
+          <p class="pp-comment-text">{{ c.texto }}</p>
+          <time class="pp-date">{{ c.fecha }}</time>
+        </article>
+      {% empty %}
+        <div class="pp-no-comments">Todavía no hay comentarios.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
