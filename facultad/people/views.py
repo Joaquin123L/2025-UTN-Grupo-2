@@ -95,7 +95,6 @@ def _count_text(n: int) -> str:
 def perfil_profesor(request, username):
     profesor = get_object_or_404(User, username=username, rol="PRO")
 
-    # Header: materias / comisiones donde figura
     relaciones = (
         MateriaComisionAnio.objects
         .filter(Q(titular=profesor) | Q(jtp=profesor) | Q(ayudante=profesor))
@@ -111,8 +110,6 @@ def perfil_profesor(request, username):
         .distinct().order_by("comision__nombre", "anio")
     )
 
-    # --------- COMENTARIOS (TITULAR + JTP) ----------
-    # Unión explícita de los dos querysets para evitar cualquier ambigüedad.
     qs_tit = ResenaItem.objects.filter(target_type="TITULAR", titular_id=profesor.id)
     qs_jtp = ResenaItem.objects.filter(target_type="JTP", jtp_id=profesor.id)
     items_qs = (qs_tit | qs_jtp).order_by("-created_at")  # mismos campos => union OK
@@ -136,13 +133,10 @@ def perfil_profesor(request, username):
             "estrellas": int(it.puntuacion or 0),
             "texto": (it.comentario or "").strip(),
             "fecha": localtime(it.created_at).strftime("%d/%m/%Y %H:%M"),
-            # útil si querés mostrar de qué rol vino:
-            # "rol": "Titular" if it.target_type == "TITULAR" else "JTP",
         }
         for it in items_qs[:50]
     ]
 
-    # (opcional) para debug interno
     por_rol = {"titular": qs_tit.count(), "jtp": qs_jtp.count()}
 
     return render(

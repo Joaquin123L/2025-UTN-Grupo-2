@@ -1,9 +1,9 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Max
 from django.shortcuts import get_object_or_404, render
 from django.utils.timezone import localtime
 
-from academics.models import MateriaComisionAnio, ResenaItem
+from academics.models import MateriaComisionAnio, ResenaItem, Materia
 from people.models import User
 
 @login_required
@@ -32,7 +32,6 @@ def perfil_comision(request, materia_id: int, comision_id: int, anio: int):
     materia = mca.materia
     comision = mca.comision
 
-    # --- rating y comentarios (sin cambios) ---
     items_qs = (
         ResenaItem.objects
         .filter(target_type="COMISION", resena__mca=mca, comision_id=comision_id)
@@ -64,9 +63,73 @@ def perfil_comision(request, materia_id: int, comision_id: int, anio: int):
             "materia": materia,
             "comision": comision,
             "anio": anio,
-            # pasamos explícito quién es quién
-            "titular": mca.titular,   # Teoría
-            "jtp": mca.jtp,           # Práctica
+            "titular": mca.titular,   
+            "jtp": mca.jtp,           
+            "rating": rating,
+            "comentarios": comentarios,
+        },
+    )
+
+def perfil_materia(request, materia_id: int):
+    materia = get_object_or_404(Materia, id=materia_id)
+
+    mcas = (
+        MateriaComisionAnio.objects
+        .filter(materia_id=materia_id)
+        .select_related("comision", "titular", "jtp")
+        .order_by("-anio", "comision__nombre")
+    )
+
+    profes, seen = [], set()
+    for m in mcas:
+        for prof in (m.titular, m.jtp):
+            if prof and prof.username not in seen:
+                profes.append(prof)
+                seen.add(prof.username)
+
+    comisiones_qs = (
+        mcas.values("comision__id", "comision__nombre")
+            .annotate(max_anio=Max("anio"))
+            .order_by("comision__nombre")
+    )
+    comisiones = [
+        {"id": row["comision__id"], "nombre": row["comision__nombre"], "anio": row["max_anio"]}
+        for row in comisiones_qs
+    ]
+
+    items_qs = (
+        ResenaItem.objects
+        .filter(target_type="MATERIA", resena__mca__materia_id=materia_id)
+        .order_by("-created_at")
+    )
+
+    agg = items_qs.aggregate(promedio=Avg("puntuacion"), cantidad=Count("id"))
+    promedio = float(agg["promedio"] or 0.0)
+    cantidad = int(agg["cantidad"] or 0)
+    full_stars = max(0, min(5, int(round(promedio)) if cantidad else 0))
+
+    rating = {
+        "score": f"{promedio:.1f}" if cantidad else "—",
+        "count_text": _count_text(cantidad),
+        "full_stars": full_stars,
+    }
+
+    comentarios = [
+        {
+            "estrellas": int(it.puntuacion or 0),
+            "texto": (it.comentario or "").strip(),
+            "fecha": localtime(it.created_at).strftime("%d/%m/%Y"),
+        }
+        for it in items_qs[:50]
+    ]
+
+    return render(
+        request,
+        "academics/perfil_materia.html",
+        {
+            "materia": materia,
+            "profes": profes,
+            "comisiones": comisiones,  
             "rating": rating,
             "comentarios": comentarios,
         },

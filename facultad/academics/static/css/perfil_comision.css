@@ -6,11 +6,9 @@
   --pp-colw:760px;
 }
 
-/* ====== Contenedor ====== */
 .pp-container{ width:100%; margin:0 0 80px; padding:0 40px; color:var(--pp-text); }
 .pp-header,.pp-comments{ max-width:var(--pp-colw); margin-left:auto; margin-right:auto; }
 
-/* ====== Header ====== */
 .pp-header{
   display:grid;
   grid-template-columns:104px 1fr;
@@ -26,39 +24,36 @@
 .pp-line{ display:flex; flex-wrap:wrap; gap:6px 10px; align-items:baseline; margin:4px 0; }
 .pp-field{ font-weight:600; }
 .pp-list{ display:inline-flex; flex-wrap:wrap; gap:6px; }
-.pp-link{ color:var(--pp-primary); text-decoration:none; } .pp-link:hover{ text-decoration:underline; }
+.pp-link{ color:var(--pp-primary); text-decoration:none; } 
+.pp-link:hover{ text-decoration:underline; }
 .pp-rating-row{ display:flex; align-items:center; gap:10px; margin-top:6px; }
 .pp-score{ font-weight:700; font-size:18px; }
 .pp-stars-pill{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; border:1px solid var(--pp-border); background:#fff; }
 .pp-stars{ display:inline-flex; gap:2px; font-size:18px; line-height:1; }
-.pp-stars i{ color:var(--pp-star); font-style:normal; } .pp-stars i.off{ color:#e5e7eb; }
+.pp-stars i{ color:var(--pp-star); font-style:normal; } 
+.pp-stars i.off{ color:#e5e7eb; }
 .pp-opiniones{ color:var(--pp-muted); font-size:14px; }
 
-/* ====== Comentarios ====== */
-/* El panel redondeado incluye el TÍTULO y la LISTA; el botón queda afuera */
 .pp-comments{
   margin-top:20px;
-  position:relative;                 /* referencia para posicionar el botón afuera */
+  position:relative;
   background:#fff;
   border:1px solid var(--pp-border);
   border-radius:14px;
   box-shadow:var(--pp-soft-shadow);
-  padding:10px 12px 12px;            /* padding del panel (título + lista) */
-  height:64vh;                       /* alto del panel */
-  display:flex;                      /* título arriba, lista ocupa el resto */
+  padding:10px 12px 12px;
+  height:64vh;
+  display:flex;
   flex-direction:column;
 }
-
-/* Título dentro del panel, sin línea inferior */
 .pp-comments-head{ padding:2px 6px 8px; }
 .pp-comments-head h2{ margin:0; font-size:18px; }
 .pp-count{ color:var(--pp-muted); font-weight:500; margin-left:6px; }
 
-/* Botón FILTRAR: fuera del panel, alineado con las estrellas */
 .pp-filter{
   position:absolute;
-  right:-2px;                        /* apenas afuera del borde derecho */
-  top:-36px;                         /* altura alineada a la fila del rating */
+  right:-2px;
+  top:-36px;
   appearance:none;
   border:1px solid var(--pp-border);
   background:#6b6673;
@@ -71,18 +66,16 @@
 }
 .pp-filter .caret{ margin-left:6px; color:#e9e7ee; }
 
-/* La LISTA va dentro del panel y scrollea; sin borde propio */
 .pp-comments-box{
-  flex:1;                            /* ocupa todo el alto restante del panel */
+  flex:1;
   overflow-y:auto;
-  padding: 0 6px 0;
+  padding:0 6px 0;
   display:flex;
   flex-direction:column;
   gap:12px;
   background:none; border:none; box-shadow:none;
 }
 
-/* Tarjeta comentario */
 .pp-comment{
   position:relative;
   background:var(--pp-soft);
@@ -92,12 +85,12 @@
   box-shadow:0 2px 4px rgba(16,24,40,.06);
 }
 .pp-stars-badge{ display:inline-flex; gap:2px; font-size:12px; padding:2px 6px; border-radius:999px; background:var(--pp-chip-bg); color:var(--pp-star); border:1px solid var(--pp-border); margin-bottom:8px; }
-.pp-stars-badge i{ font-style:normal; color:var(--pp-star); } .pp-stars-badge i.off{ color:#d1d5db; }
+.pp-stars-badge i{ font-style:normal; color:var(--pp-star); } 
+.pp-stars-badge i.off{ color:#d1d5db; }
 .pp-comment-text{ margin:0; line-height:1.45; color:var(--pp-text); }
 .pp-date{ position:absolute; right:16px; top:14px; color:var(--pp-muted); font-size:12px; }
 .pp-no-comments{ text-align:center; color:var(--pp-muted); padding:24px 0; border:1px dashed var(--pp-border); border-radius:12px; background:#fff; }
 
-/* ====== Responsive ====== */
 @media (max-width:900px){ :root{ --pp-colw:680px; } }
 @media (max-width:640px){
   .pp-container{ padding:0 16px; }
@@ -109,7 +102,16 @@
   .pp-filter{ top:-32px; right:-2px; }
 }
 
-/* Deshabilitar interacción en rating y comentarios */
-.pp-stars, .pp-stars-pill, .pp-stars-badge { pointer-events: none; }
-.pp-comment a { pointer-events: none; }   /* por si algún comentario trae links */
+.pp-stars,
+.pp-stars-badge,
+.pp-rating-row .pp-stars-pill { pointer-events: none; }
+
+.pp-headinfo .pp-stars-pill,
+a.pp-stars-pill,
+.pp-stars-pill.pp-link {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.pp-comment a { pointer-events: none; }
 .pp-comment { cursor: default; }

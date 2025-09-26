@@ -1,38 +1,41 @@
+{# templates/academics/perfil_materia.html #}
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ materia.nombre }} — Comisión {{ comision.nombre }} ({{ anio }}){% endblock %}
+{% block title %}{{ materia.nombre }} ({{ anio }}){% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'people/css/perfilprofesor.css' %}">
+<style>
+  /* Reuso tal cual; sólo aseguro que los comentarios y estrellas no sean interactivos */
+  .pp-stars, .pp-stars-pill, .pp-stars-badge { pointer-events: none; }
+  .pp-comment a { pointer-events: none; }
+  .pp-comment { cursor: default; }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="pp-container">
   <section class="pp-header">
     <div class="pp-avatar">
+      {# si tenés imagen por materia, cambiala acá #}
       <img src="{% static 'people/inge.jpg' %}" alt="{{ materia.nombre }}">
     </div>
 
     <div class="pp-headinfo">
-      <h1 class="pp-name">Comisión {{ comision.nombre }} — {{ anio }}</h1>
-      <div style="margin-top:4px;">
-        <a class="pp-stars-pill pp-link" 
-           href="{% url 'academics:perfil_materia' materia.id %}" 
-           title="Ver perfil de la materia">
-          {{ materia.nombre }}
-        </a>
-      </div>
+      <h1 class="pp-name">{{ materia.nombre }}</h1>
     </div>
 
     <div class="pp-meta">
       <div class="pp-line">
-        <span class="pp-field">Teoría:</span>
+        <span class="pp-field">Profesores:</span>
         <span class="pp-list">
-          {% if titular %}
-            <a class="pp-link" href="{% url 'people:perfil_profesor' titular.username %}">
-              {{ titular.get_full_name|default:titular.username }}
-            </a>
+          {% if profes %}
+            {% for p in profes %}
+              <a class="pp-link" href="{% url 'people:perfil_profesor' p.username %}">
+                {{ p.get_full_name|default:p.username }}
+              </a>{% if not forloop.last %} - {% endif %}
+            {% endfor %}
           {% else %}
             <span class="pp-empty">Sin asignar</span>
           {% endif %}
@@ -40,15 +43,13 @@
       </div>
 
       <div class="pp-line">
-        <span class="pp-field">Práctica:</span>
+        <span class="pp-field">Comisiones:</span>
         <span class="pp-list">
-          {% if jtp %}
-            <a class="pp-link" href="{% url 'people:perfil_profesor' jtp.username %}">
-              {{ jtp.get_full_name|default:jtp.username }}
-            </a>
-          {% else %}
-            <span class="pp-empty">Sin asignar</span>
-          {% endif %}
+          {% for c in comisiones %}
+            <a class="pp-link" href="{% url 'academics:perfil_comision' materia.id c.id c.anio %}">{{ c.nombre }}</a>{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                <span class="pp-empty">—</span>
+            {% endfor %}
         </span>
       </div>
 
@@ -75,6 +76,7 @@
       <h2>Comentarios <span class="pp-count">{{ rating.count_text }}</span></h2>
       <button class="pp-filter">Filtrar <span class="caret">▾</span></button>
     </div>
+
     <div class="pp-comments-box">
       {% for c in comentarios %}
         <article class="pp-comment">
