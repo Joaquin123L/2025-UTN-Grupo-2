@@ -103,21 +103,7 @@
 .pp-comments-head h2{ margin:0; font-size:18px; }
 .pp-count{ color:var(--pp-muted); font-weight:500; margin-left:6px; }
 
-.pp-filter{ 
-  position:absolute; 
-  right:-2px; 
-  top:-36px; 
-  appearance:none; 
-  border:1px solid var(--pp-border); 
-  background:#6b6673; 
-  color:#fff; 
-  border-radius:999px; 
-  padding:6px 12px; 
-  font-size:14px; 
-  line-height:1.1; 
-  box-shadow:0 1px 1px rgba(16,24,40,.04); 
-}
-.pp-filter .caret{ margin-left:6px; color:#e9e7ee; }
+
 
 .pp-comments-box{ 
   flex:1; 
@@ -173,3 +159,58 @@
   .pp-comments{ height:60vh; } 
   .pp-filter{ top:-32px; right:-2px; } 
 }
+
+.pp-filter-wrap{
+    position:absolute;
+    right:-2px;
+    top:-36px;
+    z-index:10;
+  }
+.pp-filter{
+    position:relative;
+    appearance:none;
+    border:1px solid var(--pp-border);
+    background:#6b6673;
+    color:#fff;
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:14px;
+    line-height:1.1;
+    box-shadow:0 1px 1px rgba(16,24,40,.04);
+    cursor:pointer;
+  }
+.pp-filter .caret{ margin-left:6px; color:#e9e7ee; }
+
+.pp-filter-menu{
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
+    min-width:220px;
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    box-shadow:0 12px 24px rgba(0,0,0,.12);
+    padding:6px;
+    z-index:1000;
+  }
+
+  /* Lista de opciones */
+.pp-menu{
+    list-style:none; margin:0; padding:4px;
+  }
+.pp-menu button{
+    width:100%;
+    text-align:left;
+    background:transparent;
+    border:none;
+    border-radius:10px;
+    padding:10px 12px;
+    cursor:pointer;
+    font-size:14px;
+  }
+.pp-menu button:hover{ background:#f3f4f6; }
+.pp-menu button[aria-current="true"]{
+    background:#eef2ff; /* leve highlight */
+    font-weight:600;
+    border:1px solid #e5e7eb;
+  }
