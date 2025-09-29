@@ -1,0 +1,59 @@
+{% load static %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'academics/css/card.css' %}">
+{% endblock %}
+
+
+    <a class="aa-card" href="{{ href }}" data-name="{{ title|lower }}"
+    {% if new_tab %}target="_blank" rel="noopener"{% endif %}>
+    <div class="aa-thumb">
+        <img src="{{ image_url}}" alt="{{ title }}">
+        {% if badge %}<span class="aa-badge">{{ badge }}</span>{% endif %}
+    </div>
+
+    <div class="aa-body">
+        {% if icon %}<div class="aa-icon">{{ icon|safe }}</div>{% endif %}
+        <h3 class="aa-title">{{ title }}</h3>
+        {% if titular or jtp %}
+        <div class="aa-meta">
+            {% if jtp %}
+            <div class="aa-row">
+                <span class="aa-label">Práctica:</span>
+                {% if jtp_url %}
+                <a href="{{ jtp_url }}">{{ jtp }}</a>
+                {% else %}
+                <span class="aa-val">{{ jtp }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if titular %}
+            <div class="aa-row">
+                <span class="aa-label">Teoría:</span>
+                {% if titular_url %}
+                <a href="{{ titular_url }}">{{ titular }}</a>
+                {% else %}
+                <span class="aa-val">{{ titular }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    {% endif %}
+                {% if rating %}
+    <div class="pp-rating-row">
+        <span class="pp-score">{{ rating.score }}</span>
+        <span class="pp-stars-pill">
+        <span class="pp-stars" aria-label="rating">
+            {% for i in "12345" %}
+            {% if forloop.counter <= rating.full_stars %}
+                <i>★</i>
+            {% else %}
+                <i class="off">★</i>
+            {% endif %}
+            {% endfor %}
+        </span>
+        </span>
+        <span class="pp-opiniones">{{ rating.count_text }}</span>
+    </div>
+    {% endif %}
+        </div>
+    </a>    
