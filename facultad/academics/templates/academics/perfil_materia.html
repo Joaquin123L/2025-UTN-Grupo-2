@@ -1,0 +1,161 @@
+{# templates/academics/perfil_materia.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ materia.nombre }} ({{ anio }}){% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/perfiles.css' %}?v={% now 'U' %}">
+{% endblock %}
+
+{% block content %}
+<div class="pp-container">
+  <section class="pp-header">
+    <div class="pp-avatar">
+      {# si tenés imagen por materia, cambiala acá #}
+      <img src="{% static 'people/inge.jpg' %}" alt="{{ materia.nombre }}">
+    </div>
+
+    <div class="pp-headinfo">
+      <h1 class="pp-name">{{ materia.nombre }}</h1>
+    </div>
+
+    <div class="pp-meta">
+      <div class="pp-line">
+        <span class="pp-field">Profesores:</span>
+        <span class="pp-list">
+          {% if profes %}
+            {% for p in profes %}
+              <a class="pp-link" href="{% url 'people:perfil_profesor' p.username %}">
+                {{ p.get_full_name|default:p.username }}
+              </a>{% if not forloop.last %} - {% endif %}
+            {% endfor %}
+          {% else %}
+            <span class="pp-empty">Sin asignar</span>
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="pp-line">
+        <span class="pp-field">Comisiones:</span>
+        <span class="pp-list">
+          {% for c in comisiones %}
+            <a class="pp-link" href="{% url 'academics:perfil_comision' materia.id c.id c.anio %}">{{ c.nombre }}</a>{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                <span class="pp-empty">—</span>
+            {% endfor %}
+        </span>
+      </div>
+
+      <div class="pp-rating-row">
+        <span class="pp-score">{{ rating.score }}</span>
+        <span class="pp-stars-pill">
+          <span class="pp-stars" aria-label="rating">
+            {% for i in "12345" %}
+              {% if forloop.counter <= rating.full_stars %}
+                <i>★</i>
+              {% else %}
+                <i class="off">★</i>
+              {% endif %}
+            {% endfor %}
+          </span>
+        </span>
+        <span class="pp-opiniones">{{ rating.count_text }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="pp-comments">
+    <div class="pp-comments-head">
+      <h2>Comentarios <span class="pp-count">{{ rating.count_text }}</span></h2>
+
+      <!-- Botón + dropdown -->
+      <div class="pp-filter-wrap">
+        <button class="pp-filter" id="ppFilterBtn" aria-expanded="false">
+          Filtrar <span class="caret">▾</span>
+        </button>
+
+        <div id="ppFilterMenu" class="pp-filter-menu" hidden>
+          <ul class="pp-menu" role="menu" aria-label="Ordenar comentarios">
+            <li>
+              <button type="button" role="menuitem" data-order="desc"
+                {% if order == 'desc' or not order %}aria-current="true"{% endif %}>
+                Más recientes
+              </button>
+            </li>
+            <li>
+              <button type="button" role="menuitem" data-order="asc"
+                {% if order == 'asc' %}aria-current="true"{% endif %}>
+                Más antiguos
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="pp-comments-box">
+      {% for c in comentarios %}
+        <article class="pp-comment">
+          <div class="pp-stars-badge">
+            {% for _ in "12345" %}
+              {% if forloop.counter <= c.estrellas %}<i>★</i>{% else %}<i class="off">★</i>{% endif %}
+            {% endfor %}
+          </div>
+          <p class="pp-comment-text">{{ c.texto }}</p>
+          <time class="pp-date">{{ c.fecha }}</time>
+        </article>
+      {% empty %}
+        <div class="pp-no-comments">Todavía no hay comentarios.</div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const btn  = document.getElementById('ppFilterBtn');
+  const menu = document.getElementById('ppFilterMenu');
+  if (!btn || !menu) return;
+
+  function openMenu() {
+    menu.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    document.addEventListener('click', onDocClick, true);
+  }
+  function closeMenu() {
+    menu.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClick, true);
+  }
+  function onDocClick(e) {
+    if (menu.contains(e.target) || btn.contains(e.target)) return;
+    closeMenu();
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    menu.hidden ? openMenu() : closeMenu();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) closeMenu();
+  });
+
+  // Click inmediato en opciones
+  menu.querySelectorAll('[data-order]').forEach(el => {
+    el.addEventListener('click', () => {
+      const value = el.getAttribute('data-order'); // 'desc' | 'asc'
+      const url = new URL(window.location.href);
+      // solo mantenemos el parámetro 'order'
+      url.searchParams.set('order', value);
+      // por si existían filtros viejos:
+      url.searchParams.delete('day');
+      url.searchParams.delete('from');
+      url.searchParams.delete('to');
+      window.location.href = url.toString();
+    });
+  });
+})();
+</script>
+{% endblock %}
