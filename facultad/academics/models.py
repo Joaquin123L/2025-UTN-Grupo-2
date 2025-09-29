@@ -188,3 +188,35 @@ class ResenaItem(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super().save(*args, **kwargs)
+    
+class Nota(models.Model):
+    class Estado(models.TextChoices):
+        CURSANDO = "CURSANDO", "Cursando"
+        PROMOCIONADA = "PROMOCIONADA", "Promocionada"
+        APROBADA = "APROBADA", "Aprobada"
+
+    alumno = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name="notas")
+    mca = models.ForeignKey("academics.MateriaComisionAnio", on_delete=models.CASCADE, related_name="notas")
+
+    # Nota numérica (si no aplica, dejala en null y usás solo 'estado')
+    nota = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
+    estado = models.CharField(max_length=16, choices=Estado.choices)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("alumno", "mca")
+        indexes = [
+            models.Index(fields=["alumno"]),
+            models.Index(fields=["mca"]),
+            models.Index(fields=["estado"]),
+        ]
+
+    def __str__(self):
+        return f"{self.alumno} — {self.mca} [{self.estado}]"
+
+    def clean(self):
+        # si querés restringir nota/estado juntos:
+        if self.estado == self.Estado.APROBADA and self.nota is None:
+            # opcional: exigir nota cuando está aprobada
+            pass
