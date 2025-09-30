@@ -6,10 +6,31 @@ from django.db.models import Q
 
 Usuario = settings.AUTH_USER_MODEL
 
+class Department(models.Model):
+    nombre = models.CharField(max_length=120, unique=True)
+    imagen = models.ImageField(upload_to="departments/", blank=True, null=True)
+    icono = models.CharField(max_length=4096, blank=True, null=True) 
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.nombre)
+        super().save(*args, **kwargs)
 class Materia(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
     eliminado = models.BooleanField(default=False)
+    departamento = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="materias")
+    descripcion = models.TextField(blank=True, null=True)
+    icono = models.CharField(max_length=4096, blank=True, null=True)
+    imagen = models.ImageField(upload_to="materias/", blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
     class Meta:
         ordering = ["nombre"]
@@ -20,6 +41,8 @@ class Materia(models.Model):
 
 class Comision(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
+    icono = models.CharField(max_length=4096, blank=True, null=True)
+    imagen = models.ImageField(upload_to="materias/", blank=True, null=True)
 
     class Meta:
         ordering = ["nombre"]
