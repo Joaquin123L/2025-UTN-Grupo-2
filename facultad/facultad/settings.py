@@ -14,6 +14,8 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 
 # Quick-start development settings - unsuitable for production
@@ -40,7 +42,8 @@ INSTALLED_APPS = [
     'people',
     'academics',
     'rest_framework',
-    'corsheaders'
+    'corsheaders',
+    "django.contrib.humanize", 
 ]
 
 MIDDLEWARE = [
@@ -61,7 +64,8 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [ BASE_DIR / "templates",                 
             BASE_DIR / "people" / "templates",      
-            BASE_DIR / "academics" / "templates",],
+            BASE_DIR / "academics" / "templates",
+            BASE_DIR / "facultad" / "templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -72,6 +76,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'facultad.wsgi.application'
 
@@ -122,7 +127,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [BASE_DIR / "static"] 
+STATICFILES_DIRS = [BASE_DIR / "static", BASE_DIR / "academics" / "static"]
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

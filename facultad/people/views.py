@@ -70,9 +70,12 @@ def altaProfesor(request):
             data = request.POST
         email = (data.get("email") or "").strip().lower()
         legajo = (data.get("legajo") or "").strip() or None
+        first_name = (data.get("first_name") or "").strip() or None
+        last_name = (data.get("last_name") or "").strip() or None
+        imagen_perfil = data.get("imagen_perfil") or None
 
         if email and legajo:
-            user = User(username=email, email=email, rol=User.Role.PROFESOR, legajo=legajo)
+            user = User(username=email, email=email, rol=User.Role.PROFESOR, legajo=legajo, first_name=first_name, last_name=last_name, imagen_perfil=imagen_perfil)
             user.set_unusable_password()
             user.save()
             messages.success(request, "Profesor dado de alta correctamente.")
