@@ -8,6 +8,7 @@ urlpatterns = [
     path("", views.home, name="home"),
     path("materia/<int:materia_id>/", views.perfil_materia, name="perfil_materia"),
     path("materias/<int:materia_id>/comisiones/<int:comision_id>/<int:anio>/", perfil_comision, name="perfil_comision"),
+    path("evaluar/<int:mca_id>/", views.evaluar_mca, name="evaluar_mca"),
 ]
 
 

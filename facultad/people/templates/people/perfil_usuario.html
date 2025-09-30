@@ -20,9 +20,9 @@
 
         <div class="avatar">
           {% if request.user.imagen_perfil %}
-            <img src="{{ request.user.imagen_perfil.url }}" alt="avatar">
+            <img src="{{ request.user.imagen_perfil.url }}" alt="Avatar de {{ request.user.get_full_name|default:request.user.username }}">
           {% else %}
-            <img src="{% static 'people/inge.jpg' %}" alt="avatar">
+            <img src="{% static 'people/inge.jpg' %}" alt="Avatar por defecto">
           {% endif %}
         </div>
 
@@ -35,9 +35,14 @@
           <div class="carrera">Ing en Sistemas de información</div>
           <div class="promedio">
             <span>Promedio:</span>
-            <span class="value">{{ promedio|default:"—" }}</span>
+            {% if promedio is not None %}
+              <span class="value">{{ promedio|floatformat:2 }}</span>
+            {% else %}
+              <span class="value">—</span>
+            {% endif %}
           </div>
         </div>
+
       </div>
     </div>
   </section>
@@ -47,7 +52,7 @@
     {% if mcas_para_evaluar %}
       <div class="chip-list">
         {% for mca in mcas_para_evaluar %}
-          <a class="chip" href=#>
+          <a class="chip" href="{% url 'academics:evaluar_mca' mca.id %}">
             {{ mca.materia.nombre }} — {{ mca.comision.nombre }} ({{ mca.anio }})
           </a>
         {% endfor %}
@@ -62,17 +67,16 @@
       <h3>Mis Comentarios <span class="count">{{ comentarios_total }}</span></h3>
 
       <div class="filter-menu">
-  <details class="filter">
-    <summary class="filter-chip">
-      Filtrar <span class="caret"></span>
-    </summary>
-    <div class="filter-popover">
-      <a class="filter-item {% if orden == 'desc' %}active{% endif %}" href="?orden=desc">Más recientes</a>
-      <a class="filter-item {% if orden == 'asc'  %}active{% endif %}" href="?orden=asc">Más antiguos</a>
-    </div>
-  </details>
-</div>
-
+        <details class="filter">
+          <summary class="filter-chip">
+            Filtrar <span class="caret"></span>
+          </summary>
+          <div class="filter-popover">
+            <a class="filter-item {% if orden == 'desc' %}active{% endif %}" href="?orden=desc">Más recientes</a>
+            <a class="filter-item {% if orden == 'asc' %}active{% endif %}" href="?orden=asc">Más antiguos</a>
+          </div>
+        </details>
+      </div>
     </div>
 
     {% if comentarios_todos %}
@@ -83,6 +87,7 @@
             <span class="title">{{ c.title }}</span>
             <span class="subtitle">· {{ c.subtitle }}</span>
           </div>
+
           <div class="meta">
             <div class="rating">
               {% for i in "12345" %}
@@ -92,6 +97,7 @@
             </div>
             <div>{{ c.fecha|date:"d/m/Y" }}</div>
           </div>
+
           <div class="comentario">
             {{ c.comentario|default:"Sin comentario." }}
           </div>
