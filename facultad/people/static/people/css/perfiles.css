@@ -1,109 +1,69 @@
-/* ====== Layout base ====== */
 .aa-container{max-width:1200px;margin:0 auto;padding:30px 20px;}
-.aa-toolbar{display:none;} /* ocultar "Perfil-Usuario" */
+.aa-toolbar{display:none;}
 .perfil-header{margin-top:12px;}
 
-/* ====== Header perfil (sin tarjeta) ====== */
-.perfil-box{
-  display:grid;
-  grid-template-columns:1.2fr 1fr;   /* izq: avatar+datos | der: porcentajes */
-  gap:24px;
-  background:transparent;border:0;box-shadow:none;padding:0;margin-bottom:20px;
-}
-@media (max-width:899px){ .perfil-box{grid-template-columns:1fr;} }
+.perfil-box{display:grid;grid-template-columns:1.2fr 1fr;gap:24px;background:transparent;border:0;box-shadow:none;padding:0;margin-bottom:20px;}
+@media (max-width:899px){.perfil-box{grid-template-columns:1fr;}}
 
-/* Izquierda: [avatar][Alumno/correo] y abajo [carrera + promedio] */
-.perfil-left{
-  display:grid;
-  grid-template-columns:88px 1fr;
-  column-gap:16px;
-  align-items:start;
-}
-
-/* Avatar (solo en el perfil, no toca navbar) */
-.perfil-left .avatar{
-  width:88px;height:88px;border-radius:50%;
-  overflow:hidden;background:#f3f4f6;border:1px solid #e5e7eb;
-}
+.perfil-left{display:grid;grid-template-columns:88px 1fr;column-gap:16px;align-items:start;}
+.perfil-left .avatar{width:88px;height:88px;border-radius:50%;overflow:hidden;background:#f3f4f6;border:1px solid #e5e7eb;}
 .perfil-left .avatar img{width:100%;height:100%;object-fit:cover;}
 
-/* Alumno + correo (a la derecha del avatar) */
 .alumno{display:flex;flex-direction:column;justify-content:center;text-align:left;margin-top:12px;}
 .alumno .label{font-weight:700;font-size:18px;color:#111827;}
-.alumno .value{font-weight:600;font-size:20px;color:#6b7280;} /* correo más clarito */
+.alumno .value{font-weight:600;font-size:20px;color:#6b7280;}
 
-/* Debajo: carrera + promedio ocupan TODO el ancho (evita cortes) */
-.perfil-left-extra{
-  grid-column:1 / -1;               /* bajo avatar + textos, ancho completo */
-  display:flex;flex-direction:column;align-items:flex-start;text-align:left;
-  margin-top:10px;
-}
-.perfil-left-extra .carrera{margin:4px 0 0 0;font-size:14px;color:#4f46e5;} /* azul */
-.perfil-left-extra .promedio{
-  margin-top:8px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:4px;
-  padding:8px 10px;font-size:14px;color:#111827;font-weight:700;
-}
+.perfil-left-extra{grid-column:1/-1;display:flex;flex-direction:column;align-items:flex-start;text-align:left;margin-top:10px;}
+.perfil-left-extra .carrera{margin:4px 0 0;font-size:14px;color:#4f46e5;}
+.perfil-left-extra .promedio{margin-top:8px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:4px;padding:8px 10px;font-size:14px;color:#111827;font-weight:700;}
 .perfil-left-extra .promedio .value{color:#2563eb;font-weight:700;}
 
-/* Derecha: porcentajes */
 .perfil-right{display:flex;align-items:center;justify-content:flex-start;}
 .estado-list{list-style:none;margin:0;padding:0;color:#6b7280;font-weight:600;}
 .estado-list li{margin:6px 0;}
 
-/* ====== Secciones ====== */
-.section-card{
-  background:#fff;border:1px solid #e5e7eb;border-radius:16px;
-  box-shadow:0 2px 8px rgba(16,24,40,.08);padding:20px;margin-bottom:18px;
-}
-.section-card h3{margin:0 0 12px 0;font-size:18px;font-weight:700;color:#111827;}
+.section-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 2px 8px rgba(16,24,40,.08);padding:20px;margin-bottom:18px;}
+.section-card h3{margin:0 0 12px;font-size:18px;font-weight:700;color:#111827;}
 
 .chip-list{display:flex;flex-wrap:wrap;gap:10px;}
-.chip{
-  display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;
-  background:#fff;border:1px solid #e5e7eb;color:#374151;text-decoration:none;font-size:14px;
-  box-shadow:0 1px 2px rgba(16,24,40,.04);
-  transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
-}
-.chip:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(16,24,40,.10);background:#f9fafb;}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:#fff;border:1px solid #e5e7eb;color:#374151;text-decoration:none;font-size:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);transition:transform .12s ease,box-shadow .12s ease,background .12s ease;}
+.chip:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(16,24,40,.1);background:#f9fafb;}
 
-/* ====== Comentarios ====== */
-.comentarios-card{
-  background:#fff;border:1px solid #e5e7eb;border-radius:16px;
-  box-shadow:0 2px 8px rgba(16,24,40,.08);padding:20px;
-}
-.comentario-item{
-  display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:14px;
-  border:1px solid #eef0f2;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(16,24,40,.04);
-}
+.comentarios-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;box-shadow:0 2px 8px rgba(16,24,40,.08);padding:20px;}
+
+.comentarios-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;}
+.comentarios-head h3{margin:0;}
+.comentarios-head .count{font-weight:600;color:#6b7280;font-size:14px;}
+
+.filter-menu{margin-left:auto;}
+.filter{position:relative;display:inline-block;}
+.filter-chip{display:inline-flex;align-items:center;gap:8px;background:#8f8a96;color:#fff;font-weight:700;font-size:14px;padding:8px 12px;border-radius:999px;cursor:pointer;user-select:none;box-shadow:0 1px 1px rgba(0,0,0,.08) inset;}
+.filter .caret{width:12px;height:12px;display:inline-block;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:center;}
+.filter-popover{position:absolute;right:0;margin-top:8px;min-width:200px;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 30px rgba(16,24,40,.12);padding:6px;z-index:20;}
+.filter[open] .filter-popover{animation:pop .08s ease-out;}
+@keyframes pop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.filter-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;text-decoration:none;color:#111827;font-size:15px;}
+.filter-item:hover{background:#f3f4f6;}
+.filter-item.active{font-weight:700;background:#f3f4f6;}
+.filter-item.active::before{content:"✔";font-size:14px;color:#111827;}
+.filter summary{list-style:none;}
+.filter summary::-webkit-details-marker{display:none;}
+
+.comentario-item{display:grid;grid-template-columns:1fr auto;gap:8px 16px;padding:14px 16px;background:#fff7f8;border:1px solid #fcd6e5;border-radius:8px;box-shadow:0 2px 0 rgba(17,24,39,.05);}
 .comentario-item + .comentario-item{margin-top:12px;}
-
 .com-header{display:flex;align-items:center;gap:8px;}
-.badge{
-  display:inline-flex;align-items:center;padding:4px 8px;font-size:12px;border-radius:999px;
-  border:1px solid #e5e7eb;background:#f9fafb;color:#374151;font-weight:600;
-}
+.badge{display:inline-flex;align-items:center;padding:4px 8px;font-size:12px;border-radius:999px;border:1px solid #e5e7eb;background:#f9fafb;color:#374151;font-weight:600;}
 .badge.materia{border-color:#c7e4ff;background:#eef7ff;color:#0b63b6;}
 .badge.comision{border-color:#fde2c4;background:#fff7ed;color:#b45309;}
 .badge.profesor{border-color:#e6e1ff;background:#f7f6ff;color:#6d28d9;}
-
 .title{font-weight:700;color:#111827;margin-right:6px;}
 .subtitle{color:#6b7280;font-size:14px;}
-.meta{text-align:right;color:#6b7280;font-size:13px;}
-
-.rating{display:inline-flex;align-items:center;gap:2px;}
-.star{font-size:14px;color:#e5e7eb;}
+.meta{text-align:right;color:#9ca3af;font-size:13px;}
+.rating{background:#fff;border:1px solid #e5e7eb;border-radius:999px;padding:2px 8px;display:inline-flex;align-items:center;gap:4px;}
+.star{color:#e5e7eb;font-size:14px;}
 .star.on{color:#fbbf24;}
-.score{margin-left:6px;font-weight:600;color:#374151;font-size:14px;}
-.comentario{grid-column:1 / -1;color:#374151;font-size:14px;line-height:1.45;}
+.score{display:none;}
+.comentario{grid-column:1/-1;color:#374151;font-size:14px;line-height:1.45;}
 
-/* ====== Vacíos / muted ====== */
-.muted { color:#9ca3af; }
-
-/* Rosita muy suave para vacíos */
-.empty {
-  background:#fff7f8;                /* rosa pastel muy clarito */
-  border:1px dashed #fcd6e5;         /* borde rosado tenue */
-  color:#6b7280;
-  padding:14px;
-  border-radius:10px;
-}
+.muted{color:#9ca3af;}
+.empty{background:#fff7f8;border:1px dashed #fcd6e5;color:#6b7280;padding:14px;border-radius:10px;}

@@ -175,28 +175,33 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
         u = self.request.user
 
-        # Promedio (si hay nota numérica)
         promedio = (
             Nota.objects.filter(alumno=u, nota__isnull=False)
             .aggregate(val=Avg("nota"))["val"]
         )
 
-        # Porcentajes por estado
         rows = Nota.objects.filter(alumno=u).values("estado").annotate(c=Count("id"))
         tot = sum(r["c"] for r in rows) or 1
         pct = {r["estado"]: round(100 * r["c"] / tot, 2) for r in rows}
 
-        # Materias para evaluar (aprobada/promocionada sin reseña)
         mcas_para_evaluar = (
             MateriaComisionAnio.objects
-            .filter(notas__alumno=u, notas__estado__in=[Nota.Estado.APROBADA, Nota.Estado.PROMOCIONADA])
+            .filter(
+                notas__alumno=u,
+                notas__estado__in=[Nota.Estado.APROBADA, Nota.Estado.PROMOCIONADA],
+            )
             .exclude(resenas__alumno=u)
             .select_related("materia", "comision")
             .order_by("materia__nombre", "comision__nombre", "-anio")
             .distinct()
         )
 
-        # Base de reseñas del alumno
+        orden = self.request.GET.get("orden", "desc")
+        if orden not in ("asc", "desc"):
+            orden = "desc"
+        order_by = ("-" if orden == "desc" else "") + "resena__created_at"
+
+
         base_qs = (
             ResenaItem.objects
             .filter(resena__alumno=u)
@@ -205,62 +210,57 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                 "resena__mca__materia", "resena__mca__comision",
                 "materia", "comision", "titular", "jtp",
             )
+            .order_by(order_by, "id")  
         )
 
         comentarios_todos = []
-
-        # Materia
-        for it in base_qs.filter(target_type=ResenaItem.Target.MATERIA):
+        for it in base_qs:
             mca = it.resena.mca
-            comentarios_todos.append({
-                "tipo": "Materia",
-                "badge": "materia",
-                "title": mca.materia.nombre,
-                "subtitle": f"Año {mca.anio}",
-                "fecha": it.resena.created_at,
-                "puntuacion": it.puntuacion,
-                "comentario": it.comentario,
-            })
 
-        # Comisión
-        for it in base_qs.filter(target_type=ResenaItem.Target.COMISION):
-            mca = it.resena.mca
-            com = mca.comision.nombre if mca.comision else "—"
-            comentarios_todos.append({
-                "tipo": "Comisión",
-                "badge": "comision",
-                "title": f"{mca.materia.nombre} — {com}",
-                "subtitle": f"Año {mca.anio}",
-                "fecha": it.resena.created_at,
-                "puntuacion": it.puntuacion,
-                "comentario": it.comentario,
-            })
+            if it.target_type == ResenaItem.Target.MATERIA:
+                comentarios_todos.append({
+                    "tipo": "Materia",
+                    "badge": "materia",
+                    "title": mca.materia.nombre,
+                    "subtitle": f"Año {mca.anio}",
+                    "fecha": it.resena.created_at,
+                    "puntuacion": it.puntuacion,
+                    "comentario": it.comentario,
+                })
 
-        # Profesores (Titular / JTP)
-        prof_qs = base_qs.filter(target_type__in=[ResenaItem.Target.TITULAR, ResenaItem.Target.JTP])
-        for it in prof_qs:
-            mca = it.resena.mca
-            rol = "Titular" if it.target_type == ResenaItem.Target.TITULAR else "JTP"
-            prof = (it.titular or it.jtp)
-            nombre = (prof.get_full_name() or prof.username) if prof else "—"
-            com = mca.comision.nombre if mca.comision else "—"
-            comentarios_todos.append({
-                "tipo": f"Profesor · {rol}",
-                "badge": "profesor",
-                "title": nombre,
-                "subtitle": f"{mca.materia.nombre} — {com} · Año {mca.anio}",
-                "fecha": it.resena.created_at,
-                "puntuacion": it.puntuacion,
-                "comentario": it.comentario,
-            })
+            elif it.target_type == ResenaItem.Target.COMISION:
+                com = mca.comision.nombre if mca.comision else "—"
+                comentarios_todos.append({
+                    "tipo": "Comisión",
+                    "badge": "comision",
+                    "title": f"{mca.materia.nombre} — {com}",
+                    "subtitle": f"Año {mca.anio}",
+                    "fecha": it.resena.created_at,
+                    "puntuacion": it.puntuacion,
+                    "comentario": it.comentario,
+                })
 
-        # Más recientes primero
-        comentarios_todos.sort(key=lambda x: x["fecha"], reverse=True)
+            elif it.target_type in (ResenaItem.Target.TITULAR, ResenaItem.Target.JTP):
+                rol = "Titular" if it.target_type == ResenaItem.Target.TITULAR else "JTP"
+                prof = (it.titular or it.jtp)
+                nombre = (prof.get_full_name() or prof.username) if prof else "—"
+                com = mca.comision.nombre if mca.comision else "—"
+                comentarios_todos.append({
+                    "tipo": f"Profesor · {rol}",
+                    "badge": "profesor",
+                    "title": nombre,
+                    "subtitle": f"{mca.materia.nombre} — {com} · Año {mca.anio}",
+                    "fecha": it.resena.created_at,
+                    "puntuacion": it.puntuacion,
+                    "comentario": it.comentario,
+                })
 
         ctx.update({
             "promedio": promedio,
             "pct": pct,
             "mcas_para_evaluar": mcas_para_evaluar,
             "comentarios_todos": comentarios_todos,
+            "comentarios_total": len(comentarios_todos),
+            "orden": orden,
         })
         return ctx
