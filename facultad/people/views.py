@@ -104,26 +104,41 @@ def perfil_profesor(request, username):
         .select_related("materia", "comision")
         .order_by("materia__nombre", "comision__nombre", "anio")
     )
+
     materias = (
         relaciones.values_list("materia__id", "materia__nombre")
         .distinct().order_by("materia__nombre")
     )
-    comisiones = (
-        relaciones.values_list("comision__id", "comision__nombre", "anio")
-        .distinct().order_by("comision__nombre", "anio")
-    )
+
+    seen = set()
+    comisiones = []
+    for r in relaciones:
+        key = (r.materia_id, r.comision_id, r.anio)
+        if key in seen:
+            continue
+        seen.add(key)
+        comisiones.append({
+            "materia_id": r.materia_id,
+            "id": r.comision_id,
+            "nombre": r.comision.nombre,
+            "anio": r.anio,
+        })
+    comisiones.sort(key=lambda x: (x["nombre"], x["anio"]))
 
     qs_tit = ResenaItem.objects.filter(target_type="TITULAR", titular_id=profesor.id)
     qs_jtp = ResenaItem.objects.filter(target_type="JTP", jtp_id=profesor.id)
-    items_qs = (qs_tit | qs_jtp).order_by("-created_at")  # mismos campos => union OK
+
+    order = request.GET.get("order", "desc")
+    if order not in ("asc", "desc"):
+        order = "desc"
+    order_prefix = "" if order == "asc" else "-"
+
+    items_qs = (qs_tit | qs_jtp).order_by(f"{order_prefix}created_at")
 
     agg = items_qs.aggregate(promedio=Avg("puntuacion"), cantidad=Count("id"))
     promedio = float(agg["promedio"] or 0.0)
     cantidad = int(agg["cantidad"] or 0)
-
-    full_stars = int(round(promedio)) if cantidad else 0
-    if full_stars < 0: full_stars = 0
-    if full_stars > 5: full_stars = 5
+    full_stars = max(0, min(5, int(round(promedio)) if cantidad else 0))
 
     rating = {
         "score": f"{promedio:.1f}" if cantidad else "—",
@@ -140,8 +155,6 @@ def perfil_profesor(request, username):
         for it in items_qs[:50]
     ]
 
-    por_rol = {"titular": qs_tit.count(), "jtp": qs_jtp.count()}
-
     return render(
         request,
         "people/perfil_profesor.html",
@@ -152,6 +165,6 @@ def perfil_profesor(request, username):
             "comisiones": comisiones,
             "rating": rating,
             "comentarios": comentarios,
-            "por_rol": por_rol,
+            "order": order,
         },
     )

@@ -127,12 +127,18 @@ def perfil_comision(request, materia_id: int, comision_id: int, anio: int):
     materia = mca.materia
     comision = mca.comision
 
-    items_qs = (
+    # --- NUEVO: orden por query param ---
+    order = (request.GET.get("order") or "desc").lower()
+    if order not in {"asc", "desc"}:
+        order = "desc"
+
+    base_qs = (
         ResenaItem.objects
         .filter(target_type="COMISION", resena__mca=mca, comision_id=comision_id)
-        .order_by("-created_at")
     )
-    agg = items_qs.aggregate(promedio=Avg("puntuacion"), cantidad=Count("id"))
+
+    # Agregados (independientes del orden)
+    agg = base_qs.aggregate(promedio=Avg("puntuacion"), cantidad=Count("id"))
     promedio = float(agg["promedio"] or 0.0)
     cantidad = int(agg["cantidad"] or 0)
     full_stars = int(round(promedio)) if cantidad else 0
@@ -142,6 +148,11 @@ def perfil_comision(request, materia_id: int, comision_id: int, anio: int):
         "count_text": _count_text(cantidad),
         "full_stars": full_stars,
     }
+
+    # Orden aplicado a los items
+    order_by = "created_at" if order == "asc" else "-created_at"
+    items_qs = base_qs.order_by(order_by)
+
     comentarios = [
         {
             "estrellas": int(it.puntuacion or 0),
@@ -158,10 +169,11 @@ def perfil_comision(request, materia_id: int, comision_id: int, anio: int):
             "materia": materia,
             "comision": comision,
             "anio": anio,
-            "titular": mca.titular,   
-            "jtp": mca.jtp,           
+            "titular": mca.titular,
+            "jtp": mca.jtp,
             "rating": rating,
             "comentarios": comentarios,
+            "order": order,  # <- pasar al template para marcar el seleccionado
         },
     )
 
@@ -192,10 +204,15 @@ def perfil_materia(request, materia_id: int):
         for row in comisiones_qs
     ]
 
+    order = request.GET.get("order", "desc")
+    if order not in ("asc", "desc"):
+        order = "desc"
+    order_prefix = "" if order == "asc" else "-"
+
     items_qs = (
         ResenaItem.objects
         .filter(target_type="MATERIA", resena__mca__materia_id=materia_id)
-        .order_by("-created_at")
+        .order_by(f"{order_prefix}created_at")
     )
 
     agg = items_qs.aggregate(promedio=Avg("puntuacion"), cantidad=Count("id"))
@@ -224,8 +241,9 @@ def perfil_materia(request, materia_id: int):
         {
             "materia": materia,
             "profes": profes,
-            "comisiones": comisiones,  
+            "comisiones": comisiones,
             "rating": rating,
             "comentarios": comentarios,
+            "order": order,
         },
     )

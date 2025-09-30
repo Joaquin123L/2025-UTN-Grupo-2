@@ -5,13 +5,7 @@
 {% block title %}{{ materia.nombre }} ({{ anio }}){% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'people/css/perfilprofesor.css' %}">
-<style>
-  /* Reuso tal cual; sólo aseguro que los comentarios y estrellas no sean interactivos */
-  .pp-stars, .pp-stars-pill, .pp-stars-badge { pointer-events: none; }
-  .pp-comment a { pointer-events: none; }
-  .pp-comment { cursor: default; }
-</style>
+  <link rel="stylesheet" href="{% static 'css/perfiles.css' %}?v={% now 'U' %}">
 {% endblock %}
 
 {% block content %}
@@ -74,7 +68,30 @@
   <section class="pp-comments">
     <div class="pp-comments-head">
       <h2>Comentarios <span class="pp-count">{{ rating.count_text }}</span></h2>
-      <button class="pp-filter">Filtrar <span class="caret">▾</span></button>
+
+      <!-- Botón + dropdown -->
+      <div class="pp-filter-wrap">
+        <button class="pp-filter" id="ppFilterBtn" aria-expanded="false">
+          Filtrar <span class="caret">▾</span>
+        </button>
+
+        <div id="ppFilterMenu" class="pp-filter-menu" hidden>
+          <ul class="pp-menu" role="menu" aria-label="Ordenar comentarios">
+            <li>
+              <button type="button" role="menuitem" data-order="desc"
+                {% if order == 'desc' or not order %}aria-current="true"{% endif %}>
+                Más recientes
+              </button>
+            </li>
+            <li>
+              <button type="button" role="menuitem" data-order="asc"
+                {% if order == 'asc' %}aria-current="true"{% endif %}>
+                Más antiguos
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <div class="pp-comments-box">
@@ -94,4 +111,51 @@
     </div>
   </section>
 </div>
+
+<script>
+(function () {
+  const btn  = document.getElementById('ppFilterBtn');
+  const menu = document.getElementById('ppFilterMenu');
+  if (!btn || !menu) return;
+
+  function openMenu() {
+    menu.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    document.addEventListener('click', onDocClick, true);
+  }
+  function closeMenu() {
+    menu.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', onDocClick, true);
+  }
+  function onDocClick(e) {
+    if (menu.contains(e.target) || btn.contains(e.target)) return;
+    closeMenu();
+  }
+
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    menu.hidden ? openMenu() : closeMenu();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !menu.hidden) closeMenu();
+  });
+
+  // Click inmediato en opciones
+  menu.querySelectorAll('[data-order]').forEach(el => {
+    el.addEventListener('click', () => {
+      const value = el.getAttribute('data-order'); // 'desc' | 'asc'
+      const url = new URL(window.location.href);
+      // solo mantenemos el parámetro 'order'
+      url.searchParams.set('order', value);
+      // por si existían filtros viejos:
+      url.searchParams.delete('day');
+      url.searchParams.delete('from');
+      url.searchParams.delete('to');
+      window.location.href = url.toString();
+    });
+  });
+})();
+</script>
 {% endblock %}
