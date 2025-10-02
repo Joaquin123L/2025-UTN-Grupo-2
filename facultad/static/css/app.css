@@ -7,7 +7,6 @@ header.navbar{
   width:100%; margin:0; border-radius:0 !important;
 }
 
-
 .container-narrow{
   max-width:none;       
   width:100%;
@@ -18,13 +17,13 @@ header.navbar{
 .navbar__inner {
   display: flex;
   align-items: center;
-  height: 64px;
+  height: 70px;
 }
 
 
 .navbar__brand{ display:flex; align-items:center; }
 .navbar__logo{
-  height:55px; width:auto; display:block; object-fit:contain;
+  height:105px; width:auto; display:block; object-fit:contain;
 }
 
 .navbar__right{
@@ -53,7 +52,6 @@ header.navbar{
   font-weight: 500;    
 }
 
-header.navbar img{ max-height:55px; }
 
 
 
