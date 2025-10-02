@@ -1,12 +1,14 @@
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count, Max, Value, OuterRef, Subquery, IntegerField, FloatField
 from django.db.models.functions import Coalesce
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import localtime
 from django.utils import timezone
-
-from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department
+from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena
 from people.models import User
+from django.contrib import messages
+from django.db import transaction, IntegrityError
+from django.http import HttpResponseForbidden
 from academics.models import Department
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView
@@ -247,3 +249,130 @@ def perfil_materia(request, materia_id: int):
             "order": order,
         },
     )
+
+@login_required
+def evaluar_mca(request, mca_id):
+    u = request.user
+    mca = get_object_or_404(
+        MateriaComisionAnio.objects.select_related("materia", "comision", "titular", "jtp"),
+        pk=mca_id
+    )
+
+    # ===== VALIDACIONES DE ACCESO (GET y POST) =====
+    tiene_nota_valida = Nota.objects.filter(
+        alumno=u,
+        mca=mca,
+        estado__in=[Nota.Estado.APROBADA, Nota.Estado.PROMOCIONADA],
+    ).exists()
+
+    ya_tiene_resena = Resena.objects.filter(alumno=u, mca=mca).exists()
+
+    if not tiene_nota_valida:
+        messages.error(request, "Solo podés evaluar materias que aprobaste o promocionaste.")
+        return redirect('people:perfil')
+
+    if ya_tiene_resena:
+        messages.info(request, "Ya enviaste una reseña para esta cursada.")
+        return redirect('people:perfil')
+
+    # ===== GET: mostrar formulario =====
+    if request.method == "GET":
+        ctx = {
+            "mca": mca,
+            "titular": mca.titular,
+            "jtp": mca.jtp,
+        }
+        return render(request, "academics/evaluar_mca.html", ctx)
+
+    # ===== POST: re-validar y crear reseña + items =====
+    # Revalido nuevamente por si hubo carrera entre GET y POST
+    if Resena.objects.filter(alumno=u, mca=mca).exists():
+        messages.info(request, "Ya enviaste una reseña para esta cursada.")
+        return redirect('people:perfil')
+
+
+    if not Nota.objects.filter(
+        alumno=u, mca=mca,
+        estado__in=[Nota.Estado.APROBADA, Nota.Estado.PROMOCIONADA]
+    ).exists():
+        # Alguien manipuló el form o cambió la nota en el medio
+        messages.error(request, "Tu estado en la materia ya no habilita enviar reseña.")
+        return redirect('people:perfil')
+
+    # Helpers
+    def _clean_score(name):
+        v = request.POST.get(name)
+        if not v:
+            return None
+        try:
+            iv = int(v)
+            return iv if 1 <= iv <= 5 else None
+        except ValueError:
+            return None
+
+    materia_score  = _clean_score("materia_score")
+    materia_comment = (request.POST.get("materia_comment") or "").strip()
+
+    comision_score = _clean_score("comision_score")
+    comision_comment = (request.POST.get("comision_comment") or "").strip()
+
+    titular_score = _clean_score("titular_score") if mca.titular_id else None
+    titular_comment = (request.POST.get("titular_comment") or "").strip() if mca.titular_id else ""
+
+    jtp_score = _clean_score("jtp_score") if mca.jtp_id else None
+    jtp_comment = (request.POST.get("jtp_comment") or "").strip() if mca.jtp_id else ""
+
+    if not any([materia_score, comision_score, titular_score, jtp_score]):
+        messages.error(request, "Elegí al menos una puntuación antes de enviar.")
+        return redirect("academics:evaluar_mca", mca_id=mca.id)
+
+    try:
+        with transaction.atomic():
+            # Esta línea puede lanzar IntegrityError si alguien duplica el envío:
+            resena = Resena.objects.create(alumno=u, mca=mca)
+
+            if materia_score:
+                ResenaItem.objects.create(
+                    resena=resena,
+                    target_type=ResenaItem.Target.MATERIA,
+                    puntuacion=materia_score,
+                    comentario=materia_comment,
+                    materia=mca.materia,
+                )
+
+            if comision_score:
+                ResenaItem.objects.create(
+                    resena=resena,
+                    target_type=ResenaItem.Target.COMISION,
+                    puntuacion=comision_score,
+                    comentario=comision_comment,
+                    comision=mca.comision,
+                )
+
+            if mca.titular_id and titular_score:
+                ResenaItem.objects.create(
+                    resena=resena,
+                    target_type=ResenaItem.Target.TITULAR,
+                    puntuacion=titular_score,
+                    comentario=titular_comment,
+                    titular=mca.titular,
+                )
+
+            if mca.jtp_id and jtp_score:
+                ResenaItem.objects.create(
+                    resena=resena,
+                    target_type=ResenaItem.Target.JTP,
+                    puntuacion=jtp_score,
+                    comentario=jtp_comment,
+                    jtp=mca.jtp,
+                )
+
+    except IntegrityError:
+        # Respaldo por la UniqueConstraint uq_resena_alumno_mca
+        messages.info(request, "Ya existe una reseña para esta cursada.")
+        return redirect('people:perfil')
+
+
+    messages.success(request, "¡Gracias! Tu evaluación fue registrada.")
+    return redirect('people:perfil')
+

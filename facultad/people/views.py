@@ -4,12 +4,13 @@ from .forms import UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q, Avg, Count
 from people.models import User
-from academics.models import MateriaComisionAnio, ResenaItem
+from academics.models import MateriaComisionAnio, ResenaItem, Resena, Nota
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import localtime
-
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import TemplateView
 
 User = get_user_model()
 
@@ -168,3 +169,101 @@ def perfil_profesor(request, username):
             "order": order,
         },
     )
+
+class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
+    template_name = "people/perfil_usuario.html"
+    login_url = "people:login"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        u = self.request.user
+
+        promedio = (
+            Nota.objects.filter(alumno=u, nota__isnull=False)
+            .aggregate(val=Avg("nota"))["val"]
+        )
+
+        rows = Nota.objects.filter(alumno=u).values("estado").annotate(c=Count("id"))
+        tot = sum(r["c"] for r in rows) or 1
+        pct = {r["estado"]: round(100 * r["c"] / tot, 2) for r in rows}
+
+        mcas_para_evaluar = (
+            MateriaComisionAnio.objects
+            .filter(
+                notas__alumno=u,
+                notas__estado__in=[Nota.Estado.APROBADA, Nota.Estado.PROMOCIONADA],
+            )
+            .exclude(resenas__alumno=u)
+            .select_related("materia", "comision")
+            .order_by("materia__nombre", "comision__nombre", "-anio")
+            .distinct()
+        )
+
+        orden = self.request.GET.get("orden", "desc")
+        if orden not in ("asc", "desc"):
+            orden = "desc"
+        order_by = ("-" if orden == "desc" else "") + "resena__created_at"
+
+
+        base_qs = (
+            ResenaItem.objects
+            .filter(resena__alumno=u)
+            .select_related(
+                "resena", "resena__mca",
+                "resena__mca__materia", "resena__mca__comision",
+                "materia", "comision", "titular", "jtp",
+            )
+            .order_by(order_by, "id")  
+        )
+
+        comentarios_todos = []
+        for it in base_qs:
+            mca = it.resena.mca
+
+            if it.target_type == ResenaItem.Target.MATERIA:
+                comentarios_todos.append({
+                    "tipo": "Materia",
+                    "badge": "materia",
+                    "title": mca.materia.nombre,
+                    "subtitle": f"Año {mca.anio}",
+                    "fecha": it.resena.created_at,
+                    "puntuacion": it.puntuacion,
+                    "comentario": it.comentario,
+                })
+
+            elif it.target_type == ResenaItem.Target.COMISION:
+                com = mca.comision.nombre if mca.comision else "—"
+                comentarios_todos.append({
+                    "tipo": "Comisión",
+                    "badge": "comision",
+                    "title": f"{mca.materia.nombre} — {com}",
+                    "subtitle": f"Año {mca.anio}",
+                    "fecha": it.resena.created_at,
+                    "puntuacion": it.puntuacion,
+                    "comentario": it.comentario,
+                })
+
+            elif it.target_type in (ResenaItem.Target.TITULAR, ResenaItem.Target.JTP):
+                rol = "Titular" if it.target_type == ResenaItem.Target.TITULAR else "JTP"
+                prof = (it.titular or it.jtp)
+                nombre = (prof.get_full_name() or prof.username) if prof else "—"
+                com = mca.comision.nombre if mca.comision else "—"
+                comentarios_todos.append({
+                    "tipo": f"Profesor · {rol}",
+                    "badge": "profesor",
+                    "title": nombre,
+                    "subtitle": f"{mca.materia.nombre} — {com} · Año {mca.anio}",
+                    "fecha": it.resena.created_at,
+                    "puntuacion": it.puntuacion,
+                    "comentario": it.comentario,
+                })
+
+        ctx.update({
+            "promedio": promedio,
+            "pct": pct,
+            "mcas_para_evaluar": mcas_para_evaluar,
+            "comentarios_todos": comentarios_todos,
+            "comentarios_total": len(comentarios_todos),
+            "orden": orden,
+        })
+        return ctx

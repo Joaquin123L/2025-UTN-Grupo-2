@@ -1,6 +1,7 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from .views import PerfilUsuarioView 
 
 
 app_name = "people"
@@ -13,4 +14,5 @@ urlpatterns = [
     path("olvide-clave/", views.olvideClave, name="olvideClave"),
     path("alta-profesor/", views.altaProfesor, name="altaProfesor"),
     path("profesor/<str:username>/", views.perfil_profesor, name="perfil_profesor"),
+    path("perfil/", PerfilUsuarioView.as_view(), name="perfil"),
 ]

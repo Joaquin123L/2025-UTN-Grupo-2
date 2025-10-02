@@ -1,0 +1,111 @@
+{# templates/people/perfil_usuario.html #}
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Perfil-Usuario{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'people/css/perfiles.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="aa-container">
+  <div class="aa-toolbar">
+    <h2>Perfil-Usuario</h2>
+  </div>
+
+  <section class="perfil-header">
+    <div class="perfil-box">
+      <div class="perfil-left">
+
+        <div class="avatar">
+          {% if request.user.imagen_perfil %}
+            <img src="{{ request.user.imagen_perfil.url }}" alt="Avatar de {{ request.user.get_full_name|default:request.user.username }}">
+          {% else %}
+            <img src="{% static 'people/inge.jpg' %}" alt="Avatar por defecto">
+          {% endif %}
+        </div>
+
+        <div class="alumno">
+          <div class="label">Alumno:</div>
+          <div class="value">{{ request.user.get_full_name|default:request.user.username }}</div>
+        </div>
+
+        <div class="perfil-left-extra">
+          <div class="carrera">Ing en Sistemas de información</div>
+          <div class="promedio">
+            <span>Promedio:</span>
+            {% if promedio is not None %}
+              <span class="value">{{ promedio|floatformat:2 }}</span>
+            {% else %}
+              <span class="value">—</span>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section-card">
+    <h3>Evaluar Materias:</h3>
+    {% if mcas_para_evaluar %}
+      <div class="chip-list">
+        {% for mca in mcas_para_evaluar %}
+          <a class="chip" href="{% url 'academics:evaluar_mca' mca.id %}">
+            {{ mca.materia.nombre }} — {{ mca.comision.nombre }} ({{ mca.anio }})
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty muted">No hay materias para evaluar en este momento.</div>
+    {% endif %}
+  </section>
+
+  <section class="comentarios-card section-card">
+    <div class="comentarios-head">
+      <h3>Mis Comentarios <span class="count">{{ comentarios_total }}</span></h3>
+
+      <div class="filter-menu">
+        <details class="filter">
+          <summary class="filter-chip">
+            Filtrar <span class="caret"></span>
+          </summary>
+          <div class="filter-popover">
+            <a class="filter-item {% if orden == 'desc' %}active{% endif %}" href="?orden=desc">Más recientes</a>
+            <a class="filter-item {% if orden == 'asc' %}active{% endif %}" href="?orden=asc">Más antiguos</a>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    {% if comentarios_todos %}
+      {% for c in comentarios_todos %}
+        <div class="comentario-item">
+          <div class="com-header">
+            <span class="badge {{ c.badge }}">{{ c.tipo }}</span>
+            <span class="title">{{ c.title }}</span>
+            <span class="subtitle">· {{ c.subtitle }}</span>
+          </div>
+
+          <div class="meta">
+            <div class="rating">
+              {% for i in "12345" %}
+                <span class="star{% if forloop.counter <= c.puntuacion %} on{% endif %}">★</span>
+              {% endfor %}
+              <span class="score">{{ c.puntuacion }}</span>
+            </div>
+            <div>{{ c.fecha|date:"d/m/Y" }}</div>
+          </div>
+
+          <div class="comentario">
+            {{ c.comentario|default:"Sin comentario." }}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No tenés reseñas todavía.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

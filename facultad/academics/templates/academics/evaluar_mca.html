@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Evaluar {{ mca.materia.nombre }} — {{ mca.comision.nombre }} ({{ mca.anio }}){% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'academics/css/evaluar.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="eva-wrap">
+  <div class="eva-header">
+    {% if mca.materia.icono %}
+      <img src="{{ mca.materia.icono.url }}" alt="{{ mca.materia.nombre }}">
+    {% else %}
+      <img src="{% static 'people/inge.jpg' %}" alt="icono materia">
+    {% endif %}
+    <h1>{{ mca.materia.nombre }}</h1>
+    <div class="eva-sub">{{ mca.comision.nombre }} — {{ mca.anio }}</div>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if titular %}
+    <div class="eva-card">
+      <div class="eva-row">
+        <div class="eva-title">Evaluar Profesor de Teoría:</div>
+        <div class="stars-pill">
+          <div class="stars" data-input="#titular_score">
+            <button type="button" class="star-btn" data-v="1" aria-label="1 estrella">★</button>
+            <button type="button" class="star-btn" data-v="2" aria-label="2 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="3" aria-label="3 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="4" aria-label="4 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="5" aria-label="5 estrellas">★</button>
+          </div>
+        </div>
+      </div>
+      <a href="#" class="eva-prof">{{ titular.get_full_name|default:titular.username }}</a>
+      <div class="eva-sub">Evaluá al profesor por cómo da la materia, su puntualidad y los tratos</div>
+      <input type="hidden" name="titular_score" id="titular_score">
+      <textarea name="titular_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+    </div>
+    {% endif %}
+
+    {% if jtp %}
+    <div class="eva-card">
+      <div class="eva-row">
+        <div class="eva-title">Evaluar Profesor de Práctica:</div>
+        <div class="stars-pill">
+          <div class="stars" data-input="#jtp_score">
+            <button type="button" class="star-btn" data-v="1" aria-label="1 estrella">★</button>
+            <button type="button" class="star-btn" data-v="2" aria-label="2 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="3" aria-label="3 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="4" aria-label="4 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="5" aria-label="5 estrellas">★</button>
+          </div>
+        </div>
+      </div>
+      <a href="#" class="eva-prof">{{ jtp.get_full_name|default:jtp.username }}</a>
+      <div class="eva-sub">Evaluá al profesor por cómo da la materia, su puntualidad y los tratos</div>
+      <input type="hidden" name="jtp_score" id="jtp_score">
+      <textarea name="jtp_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+    </div>
+    {% endif %}
+
+    <div class="eva-card">
+      <div class="eva-row">
+        <div class="eva-title">Evaluar Comisión:</div>
+        <div class="stars-pill">
+          <div class="stars" data-input="#comision_score">
+            <button type="button" class="star-btn" data-v="1" aria-label="1 estrella">★</button>
+            <button type="button" class="star-btn" data-v="2" aria-label="2 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="3" aria-label="3 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="4" aria-label="4 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="5" aria-label="5 estrellas">★</button>
+          </div>
+        </div>
+      </div>
+      <div class="eva-sub">Evaluá la comisión por su dificultad, sus evaluaciones (en relación a las clases) y el material</div>
+      <input type="hidden" name="comision_score" id="comision_score">
+      <textarea name="comision_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+    </div>
+
+    <div class="eva-card">
+      <div class="eva-row">
+        <div class="eva-title">Evaluar Materia:</div>
+        <div class="stars-pill">
+          <div class="stars" data-input="#materia_score">
+            <button type="button" class="star-btn" data-v="1" aria-label="1 estrella">★</button>
+            <button type="button" class="star-btn" data-v="2" aria-label="2 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="3" aria-label="3 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="4" aria-label="4 estrellas">★</button>
+            <button type="button" class="star-btn" data-v="5" aria-label="5 estrellas">★</button>
+          </div>
+        </div>
+      </div>
+      <div class="eva-sub">Evaluá la materia por su dificultad (una estrella es muy fácil y cinco estrellas es muy difícil)</div>
+      <input type="hidden" name="materia_score" id="materia_score">
+      <textarea name="materia_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+    </div>
+
+    <div class="eva-actions-right">
+      <button class="btn btn-rect" type="submit">Enviar</button>
+    </div>
+  </form>
+
+  <script>
+  (function(){
+    function initStars(group){
+      const hidden = document.querySelector(group.dataset.input);
+      if (!hidden) return;
+      const stars = Array.from(group.querySelectorAll('.star-btn'));
+
+      function paint(n){
+        stars.forEach(s => s.classList.toggle('active', (+s.dataset.v) <= n));
+      }
+
+      group.addEventListener('click', function(e){
+        const btn = e.target.closest('.star-btn');
+        if (!btn) return;
+        hidden.value = btn.dataset.v;
+        paint(+hidden.value);
+      });
+
+      stars.forEach(b => {
+        b.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            hidden.value = b.dataset.v;
+            paint(+hidden.value);
+          }
+        });
+      });
+
+      paint(parseInt(hidden.value || 0, 10));
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      document.querySelectorAll('.stars').forEach(initStars);
+    });
+  })();
+  </script>
+</div>
+{% endblock %}
