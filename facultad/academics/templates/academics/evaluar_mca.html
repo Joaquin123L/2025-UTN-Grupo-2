@@ -10,8 +10,8 @@
 {% block content %}
 <div class="eva-wrap">
   <div class="eva-header">
-    {% if mca.materia.icono %}
-      <img src="{{ mca.materia.icono.url }}" alt="{{ mca.materia.nombre }}">
+    {% if mca.materia.imagen %}
+      <img src="{{ mca.materia.imagen }}" alt="{{ mca.materia.nombre }}">
     {% else %}
       <img src="{% static 'people/inge.jpg' %}" alt="icono materia">
     {% endif %}
