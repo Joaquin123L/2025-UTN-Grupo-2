@@ -26,7 +26,7 @@
   <section id="grid" class="aa-grid">
     {% for d in departments %}
     {% url 'academics:subjects_by_dept' d.id as subj_url %}
-    {% include "academics/components/card.html" with title=d.nombre image_url=d.imagen icon=d.icono badge=d.badge rating=d.calificacion opiniones=d.opiniones href=subj_url new_tab=False %}
+    {% include "academics/Components/card.html" with title=d.nombre image_url=d.imagen icon=d.icono badge=d.badge rating=d.calificacion opiniones=d.opiniones href=subj_url new_tab=False %}
     {% empty %}
       <p>No hay departamentos disponibles.</p>
     {% endfor %}
