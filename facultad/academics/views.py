@@ -12,6 +12,7 @@ from django.http import HttpResponseForbidden
 from academics.models import Department
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView
+from better_profanity import profanity
 class DepartmentListView(LoginRequiredMixin, ListView):
     template_name = "academics/home.html"
     context_object_name = "departments"
@@ -158,7 +159,7 @@ def perfil_comision(request, materia_id: int, comision_id: int, anio: int):
     comentarios = [
         {
             "estrellas": int(it.puntuacion or 0),
-            "texto": (it.comentario or "").strip(),
+            "texto": profanity.censor((it.comentario or "").strip()),
             "fecha": localtime(it.created_at).strftime("%d/%m/%Y"),
         }
         for it in items_qs[:50]
@@ -231,7 +232,7 @@ def perfil_materia(request, materia_id: int):
     comentarios = [
         {
             "estrellas": int(it.puntuacion or 0),
-            "texto": (it.comentario or "").strip(),
+            "texto": profanity.censor((it.comentario or "").strip()),
             "fecha": localtime(it.created_at).strftime("%d/%m/%Y"),
         }
         for it in items_qs[:50]

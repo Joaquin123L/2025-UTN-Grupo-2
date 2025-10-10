@@ -1,4 +1,5 @@
 import json
+from better_profanity import profanity
 from django.contrib.auth import login, authenticate
 from .forms import UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
@@ -150,7 +151,7 @@ def perfil_profesor(request, username):
     comentarios = [
         {
             "estrellas": int(it.puntuacion or 0),
-            "texto": (it.comentario or "").strip(),
+            "texto": profanity.censor((it.comentario or "").strip()),
             "fecha": localtime(it.created_at).strftime("%d/%m/%Y %H:%M"),
         }
         for it in items_qs[:50]
@@ -228,7 +229,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "subtitle": f"Año {mca.anio}",
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
-                    "comentario": it.comentario,
+                    "comentario": profanity.censor((it.comentario or "").strip()),
                 })
 
             elif it.target_type == ResenaItem.Target.COMISION:
@@ -240,7 +241,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "subtitle": f"Año {mca.anio}",
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
-                    "comentario": it.comentario,
+                    "comentario": profanity.censor((it.comentario or "").strip()),
                 })
 
             elif it.target_type in (ResenaItem.Target.TITULAR, ResenaItem.Target.JTP):
@@ -255,7 +256,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "subtitle": f"{mca.materia.nombre} — {com} · Año {mca.anio}",
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
-                    "comentario": it.comentario,
+                    "comentario": profanity.censor((it.comentario or "").strip()),
                 })
 
         ctx.update({
