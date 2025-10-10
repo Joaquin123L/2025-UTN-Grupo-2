@@ -20,6 +20,8 @@ def register(request):
         if form.is_valid():
             user = form.save(commit=False)
             user.email = form.cleaned_data["email"]
+            user.first_name = form.cleaned_data["first_name"]
+            user.last_name = form.cleaned_data["last_name"]
             user.rol = User.Role.ALUMNO
             user.legajo = request.POST.get("legajo") or None
             user.save()

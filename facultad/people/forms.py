@@ -141,10 +141,12 @@ class BaseUserCreationForm(SetPasswordMixin, forms.ModelForm):
 class UserCreationForm(BaseUserCreationForm):
     class Meta(BaseUserCreationForm.Meta):
         model  = UserModel
-        fields = ("username", "email", "password1", "password2")
+        fields = ("username", "first_name", "last_name", "email", "password1", "password2")
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.first_name = self.cleaned_data["first_name"]
+        user.last_name = self.cleaned_data["last_name"]
         # BaseUserCreationForm no setea email por sí solo
         user.email = self.cleaned_data["email"]
         if commit:
@@ -153,8 +155,23 @@ class UserCreationForm(BaseUserCreationForm):
 
     def clean_username(self):
         username = self.cleaned_data.get("username")
+        first_name = self.cleaned_data.get("first_name")
+        last_name = self.cleaned_data.get("last_name")
+        email = self.cleaned_data.get("email")
         if username and self._meta.model.objects.filter(username__iexact=username).exists():
             self._update_errors(ValidationError({
                 "username": self.instance.unique_error_message(self._meta.model, ["username"])
+
             }))
         return username
+        if first_name and last_name and self._meta.model.objects.filter(first_name__iexact=first_name, last_name__iexact=last_name).exists():
+            self._update_errors(ValidationError({
+                "first_name": _("A user with that first name and last name already exists."),
+                "last_name": _("A user with that first name and last name already exists."),
+            }))
+        return first_name, last_name
+        if email and self._meta.model.objects.filter(email__iexact=email).exists():
+            self._update_errors(ValidationError({
+                "email": self.instance.unique_error_message(self._meta.model, ["email"])
+            }))
+        return email
