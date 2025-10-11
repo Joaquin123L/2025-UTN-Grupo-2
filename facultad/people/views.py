@@ -12,6 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import localtime
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
+from django.views import View
+from django.urls import NoReverseMatch 
 
 User = get_user_model()
 
@@ -270,3 +272,37 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
             "orden": orden,
         })
         return ctx
+    
+class SubirAvatarView(LoginRequiredMixin, View):
+    login_url = "people:login"
+
+    def _go_back(self):
+        # Siempre volver al perfil del usuario (tu ruta se llama "perfil")
+        try:
+            return redirect("people:perfil")
+        except NoReverseMatch:
+            # Fallback por si el namespacing no está cargado
+            return redirect("/people/perfil/")
+
+    def post(self, request):
+        file = request.FILES.get("imagen")
+        if not file:
+            messages.error(request, "No seleccionaste ninguna imagen.")
+            return self._go_back()
+
+        ok_types = {"image/jpeg", "image/png", "image/webp"}
+        if file.content_type not in ok_types:
+            messages.error(request, "Formato no soportado. Usa JPG, PNG o WebP.")
+            return self._go_back()
+
+        if file.size > 5 * 1024 * 1024:
+            messages.error(request, "La imagen supera 5 MB.")
+            return self._go_back()
+
+        u = request.user
+        # ajusta si usás perfil relacionado (u.perfil.imagen_perfil = file; u.perfil.save())
+        u.imagen_perfil = file
+        u.save(update_fields=["imagen_perfil"])
+
+        messages.success(request, "¡Tu foto de perfil fue actualizada!")
+        return self._go_back() 
