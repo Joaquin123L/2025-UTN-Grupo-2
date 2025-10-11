@@ -5,4 +5,4 @@ djangorestframework
 django-cors-headers
 whitenoise
 Pillow
-profanity-better
+better-profanity
