@@ -18,7 +18,6 @@
     <div class="perfil-box">
       <div class="perfil-left">
 
-        <!-- ==== AVATAR PERFIL ==== -->
         <div class="p-avatar-wrapper">
           <div class="p-avatar">
             {% if request.user.imagen_perfil %}
@@ -29,7 +28,6 @@
           </div>
           <button type="button" class="p-avatar-edit-btn" id="pOpenAvatarModal" aria-label="Cambiar foto de perfil">+</button>
         </div>
-        <!-- ==== FIN AVATAR PERFIL ==== -->
 
         <div class="alumno">
           <div class="label">Alumno: {{ request.user.get_full_name }}</div>
@@ -114,7 +112,6 @@
   </section>
 </div>
 
-<!-- ==== MODAL CAMBIAR AVATAR ==== -->
 <div class="p-modal-backdrop" id="pAvatarModal" hidden style="display:none">
   <div class="p-modal">
     <div class="p-modal-header">
@@ -143,7 +140,6 @@
     </form>
   </div>
 </div>
-<!-- ==== FIN MODAL ==== -->
 
 {% block extra_js %}
 <script>
@@ -157,7 +153,6 @@
   const form     = document.getElementById('pAvatarForm');
   const saveBtn  = document.getElementById('pSaveAvatar');
 
-  // Estado inicial cerrado
   function ensureClosed(){
     backdrop.hidden = true;
     backdrop.style.display = 'none';

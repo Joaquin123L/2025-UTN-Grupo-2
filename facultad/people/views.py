@@ -277,11 +277,9 @@ class SubirAvatarView(LoginRequiredMixin, View):
     login_url = "people:login"
 
     def _go_back(self):
-        # Siempre volver al perfil del usuario (tu ruta se llama "perfil")
         try:
             return redirect("people:perfil")
         except NoReverseMatch:
-            # Fallback por si el namespacing no está cargado
             return redirect("/people/perfil/")
 
     def post(self, request):
@@ -300,7 +298,6 @@ class SubirAvatarView(LoginRequiredMixin, View):
             return self._go_back()
 
         u = request.user
-        # ajusta si usás perfil relacionado (u.perfil.imagen_perfil = file; u.perfil.save())
         u.imagen_perfil = file
         u.save(update_fields=["imagen_perfil"])
 
