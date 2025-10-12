@@ -22,13 +22,10 @@ class CustomSignupView(SignupView):
     template_name = 'people/register.html'
 
     def dispatch(self, request, *args, **kwargs):
-        # Si el usuario ya está autenticado, cerrar sesión automáticamente
         if request.user.is_authenticated:
             logout(request)
         return super().dispatch(request, *args, **kwargs)
     
-    def form_invalid(self, form):
-        return super().form_invalid(form)
 
 register = CustomSignupView.as_view()
 

@@ -75,7 +75,8 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [ 
             BASE_DIR / "templates",                 
-            BASE_DIR / "people" / "templates",      
+            BASE_DIR / "people" / "templates", 
+            BASE_DIR / "people" / "templates" / "account",     
             BASE_DIR / "academics" / "templates",
             BASE_DIR / "facultad" / "templates"
         ],
@@ -177,7 +178,6 @@ AUTHENTICATION_BACKENDS = [
 # === USUARIO PERSONALIZADO ===
 AUTH_USER_MODEL = "people.User"
 
-# === CONFIGURACIÓN DE DJANGO ALLAUTH (NUEVA SINTAXIS) ===
 # Métodos de login
 ACCOUNT_LOGIN_METHODS = {'email'}
 
