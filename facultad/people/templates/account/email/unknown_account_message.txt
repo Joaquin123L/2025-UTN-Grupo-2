@@ -1,0 +1,11 @@
+Hola,
+
+Recibimos un pedido para restablecer la contraseña del correo {{ email }}.
+No encontramos ninguna cuenta asociada a ese email.
+
+Si querés registrarte, podés hacerlo acá:
+{{ signup_url }}
+
+Si no fuiste vos, ignorá este mensaje.
+
+Equipo Pasa la Data UTN

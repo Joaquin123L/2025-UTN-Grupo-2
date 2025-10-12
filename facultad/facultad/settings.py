@@ -13,10 +13,11 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 import urllib.parse as urlparse
-
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env") 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -33,11 +34,14 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
 
-
 # Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
+    "django.contrib.sites", 
+    "allauth", 
+    "allauth.account",
+    "allauth.socialaccount",
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -51,26 +55,30 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware", 
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
 
 ROOT_URLCONF = 'facultad.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [ BASE_DIR / "templates",                 
+        'DIRS': [ 
+            BASE_DIR / "templates",                 
             BASE_DIR / "people" / "templates",      
             BASE_DIR / "academics" / "templates",
-            BASE_DIR / "facultad" / "templates"],
+            BASE_DIR / "facultad" / "templates"
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -103,7 +111,7 @@ if DATABASE_URL:
             "PASSWORD": url.password,
             "HOST": url.hostname,
             "PORT": str(url.port or 5432),
-            "OPTIONS": {"sslmode": "require"},  # Render/DBs gestionadas suelen requerir SSL
+            "OPTIONS": {"sslmode": "require"},
         }
     }
 else:
@@ -137,9 +145,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-ar'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Argentina/Buenos_Aires'
 
 USE_I18N = True
 
@@ -159,5 +167,63 @@ STATICFILES_DIRS = [BASE_DIR / "static", BASE_DIR / "academics" / "static"]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+# === USUARIO PERSONALIZADO ===
 AUTH_USER_MODEL = "people.User"
 
+# === CONFIGURACIÓN DE DJANGO ALLAUTH (NUEVA SINTAXIS) ===
+# Métodos de login
+ACCOUNT_LOGIN_METHODS = {'email'}
+
+# Campos del formulario de registro
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+
+# Verificación de email
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
+
+# Formulario personalizado
+ACCOUNT_SIGNUP_FORM_CLASS = "people.forms.SignupForm"
+
+
+# Validadores de email
+ACCOUNT_EMAIL_VALIDATORS = ["people.validators.validate_utn_email"]
+
+# Rate limits (reemplaza ACCOUNT_LOGIN_ATTEMPTS_LIMIT)
+ACCOUNT_RATE_LIMITS = {
+    'login_failed': '5/h',
+}
+
+# Evita que allauth cree username automáticamente
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+
+# === REDIRECCIONES ===
+LOGIN_URL = "/people/login/"
+LOGIN_REDIRECT_URL = "/"
+ACCOUNT_LOGOUT_REDIRECT_URL = "/people/login/"
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/people/login/"
+ACCOUNT_ADAPTER = 'people.adapters.CustomAccountAdapter'
+
+# === CONFIGURACIÓN DE EMAIL ===
+# Para desarrollo: muestra emails en consola
+#EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# Para producción: descomenta esto y comenta la línea de arriba
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@pasaladata.utn")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
