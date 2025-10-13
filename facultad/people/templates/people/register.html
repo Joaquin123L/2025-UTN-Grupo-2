@@ -4,13 +4,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pasa la Data UTN - Iniciar Sesión</title>
+  <title>Pasa la Data UTN - Registrate</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-
-  {% block extra_head %}
   <link rel="stylesheet" href="{% static 'people/css/register.css' %}">
-  {% endblock %}
 </head>
 
 <body>
@@ -21,78 +18,88 @@
       <div class="login-card">
         <h1 class="login-title">Registrate</h1>
 
-        <form method="post" action="{% url 'people:register' %}" id="register-form" novalidate>
-          {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+              <p class="mb-0">{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
 
-          <input type="hidden" id="id_username" name="username" value="{{ form.username.value|default_if_none:'' }}" />
+        <form method="post" action="{% url 'account_signup' %}" id="register-form" novalidate>
+          {% csrf_token %}
 
           <div class="mb-3">
             <label for="id_legajo" class="form-label">Legajo</label>
             <input
               type="text"
-              class="form-control {% if form and form.legajo.errors %}is-invalid{% endif %}"
+              class="form-control {% if form.errors.legajo %}is-invalid{% endif %}"
               id="id_legajo"
               name="legajo"
               placeholder="Ingrese su legajo"
-              value="{{ form.legajo.value|default_if_none:'' }}"
+              value="{% if form.data.legajo %}{{ form.data.legajo }}{% endif %}"
               autocomplete="off"
             >
-            {% if form and form.legajo.errors %}
-              {% for err in form.legajo.errors %}
-                <div class="invalid-feedback">{{ err }}</div>
-              {% endfor %}
-            {% endif %}
-          </div>
-          <div class="mb-3">
-            <label for="id_full_name" class="form-label">Nombre</label>
-            <input
-              type="text"
-              class="form-control {% if form and form.first_name.errors %}is-invalid{% endif %}"
-              id="id_first_name"
-              name="first_name"
-              placeholder="Ingrese su nombre"
-              value="{{ form.first_name.value|default_if_none:'' }}"
-              autocomplete="off"
-            >
-            {% if form and form.first_name.errors %}
-              {% for err in form.first_name.errors %}
-                <div class="invalid-feedback">{{ err }}</div>
-              {% endfor %}
-            {% endif %}
-          </div>
-          <div class="mb-3">
-            <label for="id_last_name" class="form-label">Apellido</label>
-            <input
-              type="text"
-              class="form-control {% if form and form.last_name.errors %}is-invalid{% endif %}"
-              id="id_last_name"
-              name="last_name"
-              placeholder="Ingrese su apellido"
-              value="{{ form.last_name.value|default_if_none:'' }}"
-              autocomplete="off"
-            >
-            {% if form and form.last_name.errors %}
-              {% for err in form.last_name.errors %}
-                <div class="invalid-feedback">{{ err }}</div>
+            {% if form.errors.legajo %}
+              {% for err in form.errors.legajo %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
               {% endfor %}
             {% endif %}
           </div>
 
           <div class="mb-3">
-            <label for="id_email" class="form-label">Email</label>
+            <label for="id_first_name" class="form-label">Nombre</label>
+            <input
+              type="text"
+              class="form-control {% if form.errors.first_name %}is-invalid{% endif %}"
+              id="id_first_name"
+              name="first_name"
+              placeholder="Ingrese su nombre"
+              value="{% if form.data.first_name %}{{ form.data.first_name }}{% endif %}"
+              autocomplete="off"
+              required
+            >
+            {% if form.errors.first_name %}
+              {% for err in form.errors.first_name %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_last_name" class="form-label">Apellido</label>
+            <input
+              type="text"
+              class="form-control {% if form.errors.last_name %}is-invalid{% endif %}"
+              id="id_last_name"
+              name="last_name"
+              placeholder="Ingrese su apellido"
+              value="{% if form.data.last_name %}{{ form.data.last_name }}{% endif %}"
+              autocomplete="off"
+              required
+            >
+            {% if form.errors.last_name %}
+              {% for err in form.errors.last_name %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_email" class="form-label">Email institucional</label>
             <input
               type="email"
-              class="form-control {% if form and form.email.errors %}is-invalid{% endif %}"
+              class="form-control {% if form.errors.email %}is-invalid{% endif %}"
               id="id_email"
               name="email"
-              placeholder="pepe@gmail.com"
+              placeholder="tu_usuario@alu.frlp.utn.edu.ar"
               required
               autocomplete="email"
-              value="{{ form.email.value|default_if_none:'' }}"
+              value="{% if form.data.email %}{{ form.data.email }}{% endif %}"
             >
-            {% if form and form.email.errors %}
-              {% for err in form.email.errors %}
-                <div class="invalid-feedback">{{ err }}</div>
+            {% if form.errors.email %}
+              {% for err in form.errors.email %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
               {% endfor %}
             {% endif %}
           </div>
@@ -102,7 +109,7 @@
             <div class="password-container">
               <input
                 type="password"
-                class="form-control {% if form and form.password1.errors %}is-invalid{% endif %}"
+                class="form-control {% if form.errors.password1 %}is-invalid{% endif %}"
                 id="id_password1"
                 name="password1"
                 placeholder="Ingrese su contraseña"
@@ -113,9 +120,9 @@
                 <i id="toggleIcon1" class="fa fa-eye"></i>
               </button>
             </div>
-            {% if form and form.password1.errors %}
-              {% for err in form.password1.errors %}
-                <div class="invalid-feedback">{{ err }}</div>
+            {% if form.errors.password1 %}
+              {% for err in form.errors.password1 %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
               {% endfor %}
             {% endif %}
           </div>
@@ -125,7 +132,7 @@
             <div class="password-container">
               <input
                 type="password"
-                class="form-control {% if form and form.password2.errors %}is-invalid{% endif %}"
+                class="form-control {% if form.errors.password2 %}is-invalid{% endif %}"
                 id="id_password2"
                 name="password2"
                 placeholder="Repita su contraseña"
@@ -136,10 +143,9 @@
                 <i id="toggleIcon2" class="fa fa-eye"></i>
               </button>
             </div>
-            {# Acá aparecerán cosas como "This password is too common" y "entirely numeric" #}
-            {% if form and form.password2.errors %}
-              {% for err in form.password2.errors %}
-                <div class="invalid-feedback">{{ err }}</div>
+            {% if form.errors.password2 %}
+              {% for err in form.errors.password2 %}
+                <div class="invalid-feedback d-block">{{ err }}</div>
               {% endfor %}
             {% endif %}
           </div>
@@ -148,30 +154,25 @@
         </form>
 
         <div class="register-link">
-          ¿Ya tenés cuenta? <a href="{% url 'people:login' %}">Iniciá sesión</a>
+          ¿Ya tenés cuenta? <a href="{% url 'account_login' %}">Iniciá sesión</a>
         </div>
       </div>
     </section>
   </main>
 
   <script>
-    const emailInput = document.getElementById('id_email');
-    const usernameInput = document.getElementById('id_username');
-    if (emailInput && usernameInput) {
-      emailInput.addEventListener('input', () => { usernameInput.value = emailInput.value; });
-    }
-
-    // Mostrar/Ocultar contraseña
     function togglePassword(inputId, iconId) {
       const input = document.getElementById(inputId);
       const icon  = document.getElementById(iconId);
       if (!input || !icon) return;
       if (input.type === 'password') {
         input.type = 'text';
-        icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash');
+        icon.classList.remove('fa-eye'); 
+        icon.classList.add('fa-eye-slash');
       } else {
         input.type = 'password';
-        icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye');
+        icon.classList.remove('fa-eye-slash'); 
+        icon.classList.add('fa-eye');
       }
     }
   </script>

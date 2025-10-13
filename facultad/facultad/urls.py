@@ -27,6 +27,8 @@ urlpatterns = [
     path("people/", include("people.urls")),
     path("", lambda request: redirect("people:login")),
     path("academics/", include("academics.urls")),
+    path("accounts/login/", lambda request: redirect("people:login")),
+    path("accounts/", include("allauth.urls")),
     path("navbar-test/", TemplateView.as_view(template_name="navbar_test.html"), name="navbar-test"),
 ]
 if settings.DEBUG:

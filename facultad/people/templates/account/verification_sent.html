@@ -1,0 +1,51 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verifica tu Email - Pasa la Data UTN</title>
+  <link rel="stylesheet" href="{% static 'people/css/olvide-clave.css' %}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+</head>
+
+<body>
+  <main class="page">
+    <!-- Imagen o ilustración a la izquierda -->
+    <section class="left-hero"></section>
+
+    <!-- Panel derecho -->
+    <section class="right-panel">
+      <div class="login-card">
+
+        <!-- Ícono -->
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <i class="fas fa-envelope-circle-check" style="font-size: 64px; color: #60a5fa;"></i>
+        </div>
+
+        <!-- Título -->
+        <h1 class="login-title">¡Revisa tu email!</h1>
+
+        <!-- Caja informativa -->
+        <div class="info-box">
+          <p>Hemos enviado un correo de confirmación al mail que indicaste</p>
+          <p style="text-align: center; font-weight: 700; color: #00274D;">{{ email }}</p>
+          <p>Por favor, haz clic en el enlace que te enviamos para activar tu cuenta.</p>
+        </div>
+
+        <!-- Nota -->
+        <div class="note">
+          <i class="fas fa-info-circle"></i>
+          <span>No podrás iniciar sesión hasta que confirmes tu email.</span>
+        </div>
+        <!-- Enlace -->
+        <div class="register-link">
+          <a href="{% url 'people:login' %}">Volver al inicio de sesión</a>
+        </div>
+        
+
+      </div>
+    </section>
+  </main>
+</body>
+</html>
