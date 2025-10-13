@@ -15,4 +15,5 @@ urlpatterns = [
     path("alta-profesor/", views.altaProfesor, name="altaProfesor"),
     path("profesor/<str:username>/", views.perfil_profesor, name="perfil_profesor"),
     path("perfil/", PerfilUsuarioView.as_view(), name="perfil"),
+    path("perfil/upload-avatar/", views.SubirAvatarView.as_view(), name="upload_avatar"),
 ]
