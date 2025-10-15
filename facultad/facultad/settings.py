@@ -161,3 +161,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = "people.User"
 
+from pathlib import Path
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+ACADEMICS_PLAN_PATH = BASE_DIR / "data" / "plan.json"

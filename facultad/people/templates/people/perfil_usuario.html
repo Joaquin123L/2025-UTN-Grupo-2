@@ -1,4 +1,3 @@
-{# templates/people/perfil_usuario.html #}
 {% extends "base.html" %}
 {% load static %}
 
@@ -44,9 +43,15 @@
         </div>
 
       </div>
-    </div>
-  </section>
-
+      <!-- DERECHA: donut -->
+      <div class="perfil-right">
+        <div class="donut-hero">
+          <canvas id="estadoDonut" width="260" height="260"></canvas>
+        </div>
+      </div>
+       </div>
+      </section>
+  <!-- ===== EVALUAR MATERIAS ===== -->
   <section class="section-card">
     <h3>Evaluar Materias:</h3>
     {% if mcas_para_evaluar %}
@@ -62,6 +67,7 @@
     {% endif %}
   </section>
 
+  <!-- ===== MIS COMENTARIOS ===== -->
   <section class="comentarios-card section-card">
     <div class="comentarios-head">
       <h3>Mis Comentarios <span class="count">{{ comentarios_total }}</span></h3>
@@ -107,5 +113,112 @@
       <div class="empty">No tenés reseñas todavía.</div>
     {% endif %}
   </section>
+  <!-- ===== /MIS COMENTARIOS ===== -->
 </div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script>
+(function(){
+  const el = document.getElementById('estadoDonut');
+  if (!el) return;
+
+  // Conteos por estado (vienen del backend)
+  const dataCounts = {
+    cursando: {{ donut_counts.Cursando|default:0|safe }},
+    promocionada: {{ donut_counts.Promocionada|default:0|safe }},
+    aprobada: {{ donut_counts.Aprobada|default:0|safe }},
+    pendientes: {{ donut_counts.Pendientes|default:0|safe }},
+  };
+
+  const COLORS = {
+    cursando: '#76D672',
+    promocionada: '#6BB9FF',
+    aprobada: '#F4C06A',
+    pendientes: '#F07557',
+    white: '#FFFFFF'
+  };
+
+  // Plugin para extremos redondeados
+  const roundedDoughnut = {
+    id: 'roundedDoughnut',
+    afterDatasetDraw(chart, args) {
+      const {ctx} = chart;
+      const meta = args.meta;
+      if (!meta.data) return;
+      meta.data.forEach(arc => {
+        const {x, y} = arc.getProps(['x','y'], true);
+        const r = (arc.outerRadius + arc.innerRadius) / 2;
+        const t = (arc.outerRadius - arc.innerRadius);
+        const a0 = arc.startAngle;
+        const a1 = arc.endAngle;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.fillStyle = arc.options.backgroundColor;
+        // inicio
+        ctx.beginPath();
+        ctx.arc(r*Math.cos(a0), r*Math.sin(a0), t/2, 0, Math.PI*2);
+        ctx.fill();
+        // fin
+        ctx.beginPath();
+        ctx.arc(r*Math.cos(a1), r*Math.sin(a1), t/2, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+  };
+
+  const chart = new Chart(el.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Cursando','Promocionada','Aprobada','Pendientes'],
+      datasets: [{
+        data: [
+          dataCounts.cursando,
+          dataCounts.promocionada,
+          dataCounts.aprobada,
+          dataCounts.pendientes
+        ],
+        backgroundColor: [
+          COLORS.cursando,
+          COLORS.promocionada,
+          COLORS.aprobada,
+          COLORS.pendientes
+        ],
+        borderColor: COLORS.white,
+        borderWidth: 10,
+        spacing: 6,
+        cutout: '60%'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const total = ctx.dataset.data.reduce((a,b)=>a+b,0) || 1;
+              const val = ctx.parsed;
+              const pct = Math.round(val*100/total);
+              return ` ${ctx.label}: ${val} (${pct}%)`;
+            }
+          }
+        }
+      }
+    },
+    plugins: [roundedDoughnut]
+  });
+
+  // Si los porcentajes vienen mal del back, podés sincronizarlos con el gráfico:
+  const total = Object.values(dataCounts).reduce((a,b)=>a+b,0) || 1;
+  const pct = (v)=> Math.round((v*100)/total);
+  const setTxt = (id, val)=>{ const n=document.getElementById(id); if(n) n.textContent = pct(val)+'%'; };
+  setTxt('lbl-cursando', dataCounts.cursando);
+  setTxt('lbl-promocionada', dataCounts.promocionada);
+  setTxt('lbl-aprobada', dataCounts.aprobada);
+  setTxt('lbl-pendientes', dataCounts.pendientes);
+})();
+</script>
+{% endblock %}
 {% endblock %}
