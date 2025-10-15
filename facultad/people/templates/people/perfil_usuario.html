@@ -31,23 +31,24 @@
         </div>
 
         <div class="perfil-left-extra">
-          <div class="carrera">Ing en Sistemas de información</div>
-          <div class="promedio">
-            <span>Promedio:</span>
-            {% if promedio is not None %}
-              <span class="value">{{ promedio|floatformat:2 }}</span>
-            {% else %}
-              <span class="value">—</span>
-            {% endif %}
-          </div>
-        </div>
+  <div class="carrera">Ing en Sistemas de información</div>
+  <div class="promedio">
+    <span>Promedio:</span>
+    {% if promedio is not None %}
+      <span class="value">{{ promedio|floatformat:2 }}</span>
+    {% else %}
+      <span class="value">—</span>
+    {% endif %}
+  </div>
+</div>
+
 
       </div>
       <!-- DERECHA: donut -->
       <div class="perfil-right">
-        <div class="donut-hero">
-          <canvas id="estadoDonut" width="260" height="260"></canvas>
-        </div>
+        <div class="card-donut">
+  <div id="donut-estado"></div>
+</div>
       </div>
        </div>
       </section>
@@ -117,107 +118,85 @@
 </div>
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
-(function(){
-  const el = document.getElementById('estadoDonut');
+(function () {
+  const el = document.querySelector('#donut-estado');
   if (!el) return;
 
-  // Conteos por estado (vienen del backend)
+  // Datos del backend (números crudos)
   const dataCounts = {
-    cursando: {{ donut_counts.Cursando|default:0|safe }},
-    promocionada: {{ donut_counts.Promocionada|default:0|safe }},
-    aprobada: {{ donut_counts.Aprobada|default:0|safe }},
-    pendientes: {{ donut_counts.Pendientes|default:0|safe }},
+    promocionada: {{ donut_counts.Promocionada|default:0 }},
+    aprobada: {{ donut_counts.Aprobada|default:0 }},
+    pendientes: {{ donut_counts.Pendientes|default:0 }},
   };
 
-  const COLORS = {
-    cursando: '#76D672',
-    promocionada: '#6BB9FF',
-    aprobada: '#F4C06A',
-    pendientes: '#F07557',
-    white: '#FFFFFF'
-  };
+  const total = Object.values(dataCounts).reduce((a,b)=>a+b,0) || 1;
 
-  // Plugin para extremos redondeados
-  const roundedDoughnut = {
-    id: 'roundedDoughnut',
-    afterDatasetDraw(chart, args) {
-      const {ctx} = chart;
-      const meta = args.meta;
-      if (!meta.data) return;
-      meta.data.forEach(arc => {
-        const {x, y} = arc.getProps(['x','y'], true);
-        const r = (arc.outerRadius + arc.innerRadius) / 2;
-        const t = (arc.outerRadius - arc.innerRadius);
-        const a0 = arc.startAngle;
-        const a1 = arc.endAngle;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.fillStyle = arc.options.backgroundColor;
-        // inicio
-        ctx.beginPath();
-        ctx.arc(r*Math.cos(a0), r*Math.sin(a0), t/2, 0, Math.PI*2);
-        ctx.fill();
-        // fin
-        ctx.beginPath();
-        ctx.arc(r*Math.cos(a1), r*Math.sin(a1), t/2, 0, Math.PI*2);
-        ctx.fill();
-        ctx.restore();
-      });
-    }
-  };
+  // Tomar variables desde CSS (sin estilos hardcodeados en JS)
+  const css = getComputedStyle(document.documentElement);
+  const cssVar = (name, fallback='') => (css.getPropertyValue(name) || fallback).toString().trim();
 
-  const chart = new Chart(el.getContext('2d'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Cursando','Promocionada','Aprobada','Pendientes'],
-      datasets: [{
-        data: [
-          dataCounts.cursando,
-          dataCounts.promocionada,
-          dataCounts.aprobada,
-          dataCounts.pendientes
-        ],
-        backgroundColor: [
-          COLORS.cursando,
-          COLORS.promocionada,
-          COLORS.aprobada,
-          COLORS.pendientes
-        ],
-        borderColor: COLORS.white,
-        borderWidth: 10,
-        spacing: 6,
-        cutout: '60%'
-      }]
+  const COLORS = [
+    cssVar('--color-promocionada', '#6BB9FF'),
+    cssVar('--color-aprobada', '#F4C06A'),
+    cssVar('--color-pendientes', '#F07557'),
+  ];
+
+  const labels = ['Promocionada','Aprobada','Pendientes'];
+  const series = [
+    dataCounts.promocionada,
+    dataCounts.aprobada,
+    dataCounts.pendientes
+  ];
+
+  const strokeWidth = Number(cssVar('--donut-border-w', '3')) || 8;
+
+  const options = {
+    chart: { type: 'donut', height: 260, fontFamily: 'inherit' },
+    series,
+    labels,
+    colors: COLORS,
+    stroke: { width: strokeWidth },
+    legend: {
+      show: true,
     },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => {
-              const total = ctx.dataset.data.reduce((a,b)=>a+b,0) || 1;
-              const val = ctx.parsed;
-              const pct = Math.round(val*100/total);
-              return ` ${ctx.label}: ${val} (${pct}%)`;
+    dataLabels: {
+      enabled: false,
+      formatter: function (val, opts) {
+        const valAbs = opts.w.config.series[opts.seriesIndex] || 0;
+        const pct = Math.round((valAbs * 100) / total);
+        return pct + '%';
+      },
+      style: { fontSize: cssVar('--label-fs', '12px') }
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: cssVar('--donut-cutout', '60%'),
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Total',
+              formatter: () => total
             }
           }
         }
       }
     },
-    plugins: [roundedDoughnut]
-  });
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          const pct = Math.round((val * 100) / total);
+          return val + ' (' + pct + '%)';
+        }
+      }
+    }
+  };
 
-  // Si los porcentajes vienen mal del back, podés sincronizarlos con el gráfico:
-  const total = Object.values(dataCounts).reduce((a,b)=>a+b,0) || 1;
-  const pct = (v)=> Math.round((v*100)/total);
-  const setTxt = (id, val)=>{ const n=document.getElementById(id); if(n) n.textContent = pct(val)+'%'; };
-  setTxt('lbl-cursando', dataCounts.cursando);
-  setTxt('lbl-promocionada', dataCounts.promocionada);
-  setTxt('lbl-aprobada', dataCounts.aprobada);
-  setTxt('lbl-pendientes', dataCounts.pendientes);
+  new ApexCharts(el, options).render();
 })();
 </script>
 {% endblock %}
