@@ -18,6 +18,8 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_variables
 from django.contrib.auth import get_user_model
 
+from people.validators import validate_utn_email
+
 UserModel = get_user_model()
 logger = logging.getLogger("django.contrib.auth")
 
@@ -147,6 +149,7 @@ class UserCreationForm(BaseUserCreationForm):
         user = super().save(commit=False)
         user.first_name = self.cleaned_data["first_name"]
         user.last_name = self.cleaned_data["last_name"]
+        user.username = self.cleaned_data["username"]
         # BaseUserCreationForm no setea email por sí solo
         user.email = self.cleaned_data["email"]
         if commit:
@@ -155,23 +158,55 @@ class UserCreationForm(BaseUserCreationForm):
 
     def clean_username(self):
         username = self.cleaned_data.get("username")
-        first_name = self.cleaned_data.get("first_name")
-        last_name = self.cleaned_data.get("last_name")
-        email = self.cleaned_data.get("email")
         if username and self._meta.model.objects.filter(username__iexact=username).exists():
-            self._update_errors(ValidationError({
-                "username": self.instance.unique_error_message(self._meta.model, ["username"])
-
-            }))
+            raise ValidationError(
+                self.instance.unique_error_message(self._meta.model, ["username"])
+            )
         return username
-        if first_name and last_name and self._meta.model.objects.filter(first_name__iexact=first_name, last_name__iexact=last_name).exists():
-            self._update_errors(ValidationError({
-                "first_name": _("A user with that first name and last name already exists."),
-                "last_name": _("A user with that first name and last name already exists."),
-            }))
-        return first_name, last_name
+    def clean_email(self):
+        email = self.cleaned_data.get("email")
         if email and self._meta.model.objects.filter(email__iexact=email).exists():
-            self._update_errors(ValidationError({
-                "email": self.instance.unique_error_message(self._meta.model, ["email"])
-            }))
+            raise ValidationError("Ya existe un usuario con este email.")
         return email
+
+class SignupForm(forms.Form):
+    first_name = forms.CharField(label="Nombre", max_length=150)
+    last_name  = forms.CharField(label="Apellido", max_length=150)
+    username   = forms.CharField(label="Usuario", max_length=150, required=False, widget=forms.HiddenInput())
+    legajo     = forms.CharField(label="Legajo", max_length=50, required=False)
+
+    def signup(self, request, user):
+        # El email ya fue validado por CustomAccountAdapter
+        user.first_name = self.cleaned_data["first_name"]
+        user.last_name  = self.cleaned_data["last_name"]
+        
+        if not user.username:
+            user.username = make_unique_username(user.first_name, user.last_name, user.email)
+        
+        user.legajo = self.cleaned_data.get("legajo") or None
+
+        if hasattr(user, "rol") and hasattr(UserModel, "Role"):
+            user.rol = UserModel.Role.ALUMNO
+
+        user.save()
+        return user
+    
+from django.utils.text import slugify
+
+def make_unique_username(first_name: str, last_name: str, email: str | None = None) -> str:
+    base = slugify(f"{(first_name or '').strip()}.{(last_name or '').strip()}")  # joaquin.luberto
+    base = base.replace("-", ".").strip(".")
+    if not base:
+        # fallback si no hay nombre/apellido (o son vacíos)
+        base = slugify((email or "user").split("@")[0]) or "user"
+
+    max_len = UserModel._meta.get_field("username").max_length
+    base = base[:max_len]
+
+    username = base
+    i = 1
+    while UserModel.objects.filter(username__iexact=username).exists():
+        suf = str(i)
+        username = f"{base[:max_len - len(suf)]}{suf}"
+        i += 1
+    return username

@@ -3,17 +3,19 @@
 <header class="navbar">
   <div class="navbar__inner container-narrow">
     <a class="navbar__brand" href="{% url 'academics:home' %}">
-  <img class="navbar__logo" src="{% static 'img/logo.png' %}" alt="Pasa la Data UTN">
-</a>
-
-
+      <img class="navbar__logo" src="{% static 'img/logo.png' %}" alt="Pasa la Data UTN">
+    </a>
 
     {% if request.user.is_authenticated %}
       <div class="navbar__right">
-        <a class="avatar" href="{% url 'people:perfil' %}" title="Mi perfil">
-          <span class="avatar__fallback">
-            {{ request.user.get_short_name|default:request.user.username|slice:":1"|upper }}
-          </span>
+        <a class="nav-avatar" href="{% url 'people:perfil' %}" title="Mi perfil">
+          {% if request.user.imagen_perfil %}
+            <img src="{{ request.user.imagen_perfil.url }}" alt="Foto de perfil">
+          {% else %}
+            <span class="nav-avatar__fallback">
+              {{ request.user.get_short_name|default:request.user.username|slice:":1"|upper }}
+            </span>
+          {% endif %}
         </a>
       </div>
     {% else %}

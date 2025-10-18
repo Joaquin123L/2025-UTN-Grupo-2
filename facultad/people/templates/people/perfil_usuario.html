@@ -17,12 +17,15 @@
     <div class="perfil-box">
       <div class="perfil-left">
 
-        <div class="avatar">
-          {% if request.user.imagen_perfil %}
-            <img src="{{ request.user.imagen_perfil.url }}" alt="Avatar de {{ request.user.get_full_name|default:request.user.username }}">
-          {% else %}
-            <img src="{% static 'people/inge.jpg' %}" alt="Avatar por defecto">
-          {% endif %}
+        <div class="p-avatar-wrapper">
+          <div class="p-avatar">
+            {% if request.user.imagen_perfil %}
+              <img id="pAvatarImg" src="{{ request.user.imagen_perfil.url }}" alt="Avatar de {{ request.user.get_full_name|default:request.user.username }}">
+            {% else %}
+              <img id="pAvatarImg" src="{% static 'people/inge.jpg' %}" alt="Avatar por defecto">
+            {% endif %}
+          </div>
+          <button type="button" class="p-avatar-edit-btn" id="pOpenAvatarModal" aria-label="Cambiar foto de perfil">+</button>
         </div>
 
         <div class="alumno">
@@ -116,6 +119,90 @@
   </section>
   <!-- ===== /MIS COMENTARIOS ===== -->
 </div>
+
+<div class="p-modal-backdrop" id="pAvatarModal" hidden style="display:none">
+  <div class="p-modal">
+    <div class="p-modal-header">
+      <h4>Cambiar foto de perfil</h4>
+      <button type="button" class="p-modal-close" id="pCloseAvatarModal" aria-label="Cerrar">×</button>
+    </div>
+
+    <form id="pAvatarForm" method="post" action="{% url 'people:upload_avatar' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="p-modal-body">
+        <div class="p-avatar-preview">
+          <img id="pAvatarPreview" src="{% if request.user.imagen_perfil %}{{ request.user.imagen_perfil.url }}{% else %}{% static 'people/inge.jpg' %}{% endif %}" alt="Previsualización">
+        </div>
+
+        <div class="p-file-field">
+          <label for="pAvatarInput" class="p-file-label">Elegir nueva foto</label>
+          <input type="file" id="pAvatarInput" name="imagen" accept="image/*" class="p-visually-hidden">
+          <small class="p-muted">Formatos: JPG/PNG/WebP. Máx: 5 MB.</small>
+        </div>
+      </div>
+
+      <div class="p-modal-footer">
+        <button type="button" class="p-btn p-secondary" id="pCancelAvatar">Cancelar</button>
+        <button type="submit" class="p-btn p-primary" id="pSaveAvatar">Aceptar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+(function(){
+  const backdrop = document.getElementById('pAvatarModal');
+  const openBtn  = document.getElementById('pOpenAvatarModal');
+  const closeBtn = document.getElementById('pCloseAvatarModal');
+  const cancelBtn= document.getElementById('pCancelAvatar');
+  const input    = document.getElementById('pAvatarInput');
+  const preview  = document.getElementById('pAvatarPreview');
+  const form     = document.getElementById('pAvatarForm');
+  const saveBtn  = document.getElementById('pSaveAvatar');
+
+  function ensureClosed(){
+    backdrop.hidden = true;
+    backdrop.style.display = 'none';
+    document.body.style.overflow = '';
+  }
+  ensureClosed();
+
+  function openModal(){
+    backdrop.hidden = false;
+    backdrop.style.display = 'grid';
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    ensureClosed();
+  }
+
+  openBtn?.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeModal();
+  });
+
+  input?.addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ok = ['image/jpeg','image/png','image/webp'];
+    if (!ok.includes(file.type)) { alert('Formato no soportado. Usa JPG, PNG o WebP.'); input.value=''; return; }
+    if (file.size > 5 * 1024 * 1024) { alert('La imagen supera 5 MB.'); input.value=''; return; }
+
+    const reader = new FileReader();
+    reader.onload = ev => { preview.src = ev.target.result; };
+    reader.readAsDataURL(file);
+  });
+
+  form?.addEventListener('submit', () => {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando...';
+  });
+})();
+</script>
+{% endblock %}
 
 {% block extra_js %}
 

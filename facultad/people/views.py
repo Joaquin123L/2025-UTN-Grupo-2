@@ -1,7 +1,8 @@
 import json
 from better_profanity import profanity
 from django.contrib.auth import login, authenticate
-from .forms import UserCreationForm
+from django.urls import reverse_lazy
+from .forms import SignupForm, UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q, Avg, Count
 from people.models import User
@@ -18,25 +19,23 @@ from django.conf import settings
 from academics.plan_loader import load_plan_rows
 from better_profanity import profanity
 
+from django.views import View
+from django.urls import NoReverseMatch 
+from allauth.account.views import SignupView
+from django.contrib.auth import logout
 
 User = get_user_model()
 
-def register(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.email = form.cleaned_data["email"]
-            user.first_name = form.cleaned_data["first_name"]
-            user.last_name = form.cleaned_data["last_name"]
-            user.rol = User.Role.ALUMNO
-            user.legajo = request.POST.get("legajo") or None
-            user.save()
-            login(request, user)
-            return redirect("people:login")
-    else:
-        form = UserCreationForm()
-    return render(request, "people/register.html", {"form": form})
+class CustomSignupView(SignupView):
+    template_name = 'people/register.html'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            logout(request)
+        return super().dispatch(request, *args, **kwargs)
+    
+
+register = CustomSignupView.as_view()
 
 def login_view(request):
     if request.method == "POST":
@@ -62,10 +61,8 @@ def login_view(request):
 
 
 def olvideClave(request):
-    if request.method == "POST":
-        email = (request.POST.get("email") or "").strip().lower()
-        return redirect("people:login")
     return render(request, "people/olvide-clave.html")
+
 
 @csrf_exempt
 def altaProfesor(request):
@@ -406,3 +403,34 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
             "dashboard_carrera": carrera_elegida or "Plan",
         })
         return ctx
+    
+class SubirAvatarView(LoginRequiredMixin, View):
+    login_url = "people:login"
+
+    def _go_back(self):
+        try:
+            return redirect("people:perfil")
+        except NoReverseMatch:
+            return redirect("/people/perfil/")
+
+    def post(self, request):
+        file = request.FILES.get("imagen")
+        if not file:
+            messages.error(request, "No seleccionaste ninguna imagen.")
+            return self._go_back()
+
+        ok_types = {"image/jpeg", "image/png", "image/webp"}
+        if file.content_type not in ok_types:
+            messages.error(request, "Formato no soportado. Usa JPG, PNG o WebP.")
+            return self._go_back()
+
+        if file.size > 5 * 1024 * 1024:
+            messages.error(request, "La imagen supera 5 MB.")
+            return self._go_back()
+
+        u = request.user
+        u.imagen_perfil = file
+        u.save(update_fields=["imagen_perfil"])
+
+        messages.success(request, "¡Tu foto de perfil fue actualizada!")
+        return self._go_back() 

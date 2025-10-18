@@ -1,0 +1,12 @@
+Hola,
+
+Recibimos una solicitud para registrar la cuenta {{ email }} en Pasa la Data UTN.
+
+Para confirmar tu dirección de correo electrónico, hacé clic en el siguiente enlace:
+
+{{ activate_url }}
+
+Si no fuiste vos quien solicitó esto, podés ignorar este mensaje.
+
+Saludos,
+Equipo Pasa la Data UTN
