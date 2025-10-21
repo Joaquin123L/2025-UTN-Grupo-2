@@ -13,6 +13,9 @@ from academics.models import Department
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView
 from better_profanity import profanity
+from django.urls import reverse
+from django.http import Http404
+
 class DepartmentListView(LoginRequiredMixin, ListView):
     template_name = "academics/home.html"
     context_object_name = "departments"
@@ -377,3 +380,111 @@ def evaluar_mca(request, mca_id):
     messages.success(request, "¡Gracias! Tu evaluación fue registrada.")
     return redirect('people:perfil')
 
+
+@login_required
+def editar_resena_mca(request, mca_id):
+    """
+    Edita la reseña existente del user para este MCA.
+    Usa el mismo template de evaluar (evaluar_mca.html) pero con is_edit=True.
+    """
+    u = request.user
+    mca = get_object_or_404(
+        MateriaComisionAnio.objects.select_related("materia", "comision", "titular", "jtp"),
+        pk=mca_id
+    )
+
+    # Debe existir reseña del usuario para este MCA; si no, redirigir a crear
+    resena = Resena.objects.filter(alumno=u, mca=mca).first()
+    if not resena:
+        messages.info(request, "Aún no enviaste una reseña para esta cursada. Podés crearla ahora.")
+        return redirect('academics:evaluar_mca', mca_id=mca.id)
+
+    # Precarga para el template
+    initial = {}
+    items = {i.target_type: i for i in resena.items.all()}
+    it = items.get(ResenaItem.Target.MATERIA)
+    if it: initial.update(materia_score=it.puntuacion, materia_comment=it.comentario)
+    it = items.get(ResenaItem.Target.COMISION)
+    if it: initial.update(comision_score=it.puntuacion, comision_comment=it.comentario)
+    it = items.get(ResenaItem.Target.TITULAR)
+    if it: initial.update(titular_score=it.puntuacion, titular_comment=it.comentario)
+    it = items.get(ResenaItem.Target.JTP)
+    if it: initial.update(jtp_score=it.puntuacion, jtp_comment=it.comentario)
+
+    if request.method == "POST":
+        data = request.POST
+
+        def upsert_item(target, score_key, comment_key):
+            puntuacion = (data.get(score_key) or "").strip()
+            comentario = (data.get(comment_key) or "").strip()
+
+            # Si no se envía puntaje, eliminar el item si existía
+            if not puntuacion:
+                ResenaItem.objects.filter(resena=resena, target_type=target).delete()
+                return
+
+            item, _ = ResenaItem.objects.get_or_create(resena=resena, target_type=target)
+            item.puntuacion = int(puntuacion)
+            item.comentario = comentario
+
+            # Vincular FK según target (y limpiar las demás)
+            if target == ResenaItem.Target.MATERIA:
+                item.materia = mca.materia
+                item.comision = item.titular = item.jtp = None
+            elif target == ResenaItem.Target.COMISION:
+                item.comision = mca.comision
+                item.materia = item.titular = item.jtp = None
+            elif target == ResenaItem.Target.TITULAR:
+                if not mca.titular_id:
+                    ResenaItem.objects.filter(resena=resena, target_type=target).delete()
+                    return
+                item.titular = mca.titular
+                item.materia = item.comision = item.jtp = None
+            elif target == ResenaItem.Target.JTP:
+                if not mca.jtp_id:
+                    ResenaItem.objects.filter(resena=resena, target_type=target).delete()
+                    return
+                item.jtp = mca.jtp
+                item.materia = item.comision = item.titular = None
+
+            item.save()  # valida con clean()
+
+        upsert_item(ResenaItem.Target.MATERIA,  "materia_score",  "materia_comment")
+        upsert_item(ResenaItem.Target.COMISION, "comision_score", "comision_comment")
+        upsert_item(ResenaItem.Target.TITULAR,  "titular_score",  "titular_comment")
+        upsert_item(ResenaItem.Target.JTP,      "jtp_score",      "jtp_comment")
+
+        messages.success(request, "¡Listo! Tu reseña fue actualizada.")
+        return redirect('people:perfil')  # o tu destino preferido
+
+    ctx = {
+        "mca": mca,
+        "titular": mca.titular,
+        "jtp": mca.jtp,
+        "materia_score":  initial.get("materia_score", ""),
+        "materia_comment":initial.get("materia_comment", ""),
+        "comision_score": initial.get("comision_score", ""),
+        "comision_comment":initial.get("comision_comment", ""),
+        "titular_score":  initial.get("titular_score", ""),
+        "titular_comment":initial.get("titular_comment", ""),
+        "jtp_score":      initial.get("jtp_score", ""),
+        "jtp_comment":    initial.get("jtp_comment", ""),
+        "is_edit": True,  # <- para que el botón diga “Editar”
+    }
+    return render(request, "academics/evaluar_mca.html", ctx)
+
+
+
+@login_required
+def eliminar_resena_mca(request, mca_id):
+    if request.method != "POST":
+        raise Http404()
+
+    u = request.user
+    mca = get_object_or_404(MateriaComisionAnio, pk=mca_id)
+
+    # 🧹 Eliminar SOLO la reseña (sus items se borran por cascade)
+    Resena.objects.filter(alumno=u, mca=mca).delete()
+
+    messages.success(request, "Se eliminó tu reseña. Podés volver a evaluarla cuando quieras.")
+    return redirect("people:perfil") 

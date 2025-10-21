@@ -204,7 +204,6 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
             orden = "desc"
         order_by = ("-" if orden == "desc" else "") + "resena__created_at"
 
-
         base_qs = (
             ResenaItem.objects
             .filter(resena__alumno=u)
@@ -213,7 +212,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                 "resena__mca__materia", "resena__mca__comision",
                 "materia", "comision", "titular", "jtp",
             )
-            .order_by(order_by, "id")  
+            .order_by(order_by, "id")
         )
 
         comentarios_todos = []
@@ -229,6 +228,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
                     "comentario": profanity.censor((it.comentario or "").strip()),
+                    "mca_id": mca.id,                           # 👈 clave
                 })
 
             elif it.target_type == ResenaItem.Target.COMISION:
@@ -241,6 +241,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
                     "comentario": profanity.censor((it.comentario or "").strip()),
+                    "mca_id": mca.id,                           # 👈 clave
                 })
 
             elif it.target_type in (ResenaItem.Target.TITULAR, ResenaItem.Target.JTP):
@@ -256,6 +257,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
                     "comentario": profanity.censor((it.comentario or "").strip()),
+                    "mca_id": mca.id,                           # 👈 clave
                 })
 
         ctx.update({
@@ -267,6 +269,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
             "orden": orden,
         })
         return ctx
+
     
 class SubirAvatarView(LoginRequiredMixin, View):
     login_url = "people:login"

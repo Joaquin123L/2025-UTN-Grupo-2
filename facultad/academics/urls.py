@@ -9,6 +9,9 @@ urlpatterns = [
     path("materias/<int:materia_id>/comisiones/<int:comision_id>/<int:anio>/", views.perfil_comision, name="perfil_comision"),
     path("materias/<int:materia_id>/<int:anio>/comisiones/", views.MateriaComisionAnioListView.as_view(), name="materia_comisiones"),
     path("evaluar/<int:mca_id>/", views.evaluar_mca, name="evaluar_mca"),
+    path("mca/<int:mca_id>/resena/editar/", views.editar_resena_mca, name="editar_resena_mca"),
+    path("mca/<int:mca_id>/resena/eliminar/", views.eliminar_resena_mca, name="eliminar_resena_mca"),
+
 ]
 
 
