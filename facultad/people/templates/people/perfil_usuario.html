@@ -196,7 +196,7 @@
           {% if c.mca_id %}
           <div class="com-actions">
             <a href="{% url 'academics:editar_resena_mca' c.mca_id %}" title="Editar reseña">
-              <img class="icon-22" src="{% static 'people/editar.png' %}" alt="Editar">
+              <img class="icon-22" src="{% static 'people/editarr.png' %}" alt="Editar">
             </a>
             <form class="delete-form" data-mca="{{ c.mca_id }}" method="post"
                   action="{% url 'academics:eliminar_resena_mca' c.mca_id %}">
