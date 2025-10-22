@@ -1,4 +1,3 @@
-{# templates/people/perfil_usuario.html #}
 {% extends "base.html" %}
 {% load static %}
 
@@ -35,21 +34,28 @@
         </div>
 
         <div class="perfil-left-extra">
-          <div class="carrera">Ing en Sistemas de información</div>
-          <div class="promedio">
-            <span>Promedio:</span>
-            {% if promedio is not None %}
-              <span class="value">{{ promedio|floatformat:2 }}</span>
-            {% else %}
-              <span class="value">—</span>
-            {% endif %}
-          </div>
-        </div>
+  <div class="carrera">Ing en Sistemas de información</div>
+  <div class="promedio">
+    <span>Promedio:</span>
+    {% if promedio is not None %}
+      <span class="value">{{ promedio|floatformat:2 }}</span>
+    {% else %}
+      <span class="value">—</span>
+    {% endif %}
+  </div>
+</div>
+
 
       </div>
-    </div>
-  </section>
-
+      <!-- DERECHA: donut -->
+      <div class="perfil-right">
+        <div class="card-donut">
+  <div id="donut-estado"></div>
+</div>
+      </div>
+       </div>
+      </section>
+  <!-- ===== EVALUAR MATERIAS ===== -->
   <section class="section-card">
     <h3>Evaluar Materias:</h3>
     {% if mcas_para_evaluar %}
@@ -65,6 +71,7 @@
     {% endif %}
   </section>
 
+  <!-- ===== MIS COMENTARIOS ===== -->
   <section class="comentarios-card section-card">
     <div class="comentarios-head">
       <h3>Mis Comentarios <span class="count">{{ comentarios_total }}</span></h3>
@@ -110,6 +117,7 @@
       <div class="empty">No tenés reseñas todavía.</div>
     {% endif %}
   </section>
+  <!-- ===== /MIS COMENTARIOS ===== -->
 </div>
 
 <div class="p-modal-backdrop" id="pAvatarModal" hidden style="display:none">
@@ -140,6 +148,8 @@
     </form>
   </div>
 </div>
+
+
 
 {% block extra_js %}
 <script>
@@ -192,6 +202,86 @@
     saveBtn.disabled = true;
     saveBtn.textContent = 'Guardando...';
   });
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script>
+(function () {
+  const el = document.querySelector('#donut-estado');
+  if (!el) return;
+
+  const dataCounts = {
+    promocionada: parseInt('{{ donut_counts.Promocionada|default:0 }}'),
+    aprobada: parseInt('{{ donut_counts.Aprobada|default:0 }}'),
+    pendientes: parseInt('{{ donut_counts.Pendientes|default:0 }}'),
+  };
+
+  const total = Object.values(dataCounts).reduce((a,b)=>a+b,0) || 1;
+
+  // Tomar variables desde CSS (sin estilos hardcodeados en JS)
+  const css = getComputedStyle(document.documentElement);
+  const cssVar = (name, fallback='') => (css.getPropertyValue(name) || fallback).toString().trim();
+
+  const COLORS = [
+    cssVar('--color-promocionada', '#6BB9FF'),
+    cssVar('--color-aprobada', '#F4C06A'),
+    cssVar('--color-pendientes', '#F07557'),
+  ];
+
+  const labels = ['Promocionada','Aprobada','Pendientes'];
+  const series = [
+    dataCounts.promocionada,
+    dataCounts.aprobada,
+    dataCounts.pendientes
+  ];
+
+  const strokeWidth = Number(cssVar('--donut-border-w', '3')) || 8;
+
+  const options = {
+    chart: { type: 'donut', height: 260, fontFamily: 'inherit' },
+    series,
+    labels,
+    colors: COLORS,
+    stroke: { width: strokeWidth },
+    legend: {
+      show: true,
+    },
+    dataLabels: {
+      enabled: false,
+      formatter: function (val, opts) {
+        const valAbs = opts.w.config.series[opts.seriesIndex] || 0;
+        const pct = Math.round((valAbs * 100) / total);
+        return pct + '%';
+      },
+      style: { fontSize: cssVar('--label-fs', '12px') }
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: cssVar('--donut-cutout', '60%'),
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Total',
+              formatter: () => total
+            }
+          }
+        }
+      }
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          const pct = Math.round((val * 100) / total);
+          return val + ' (' + pct + '%)';
+        }
+      }
+    }
+  };
+
+  new ApexCharts(el, options).render();
 })();
 </script>
 {% endblock %}
