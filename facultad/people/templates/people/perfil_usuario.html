@@ -211,11 +211,10 @@
   const el = document.querySelector('#donut-estado');
   if (!el) return;
 
-  // Datos del backend (números crudos)
   const dataCounts = {
-    promocionada: {{ donut_counts.Promocionada|default:0 }},
-    aprobada: {{ donut_counts.Aprobada|default:0 }},
-    pendientes: {{ donut_counts.Pendientes|default:0 }},
+    promocionada: parseInt('{{ donut_counts.Promocionada|default:0 }}'),
+    aprobada: parseInt('{{ donut_counts.Aprobada|default:0 }}'),
+    pendientes: parseInt('{{ donut_counts.Pendientes|default:0 }}'),
   };
 
   const total = Object.values(dataCounts).reduce((a,b)=>a+b,0) || 1;
