@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Departamento: {{ view.object.nombre|default:"Nuevo" }}{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'academics/css/departamento_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ap-form-wrap">
+  <h2 class="ap-title">Departamento: {{ view.object.nombre|default:"Nuevo" }}</h2>
+
+  <div class="ap-card">
+    <form method="post" enctype="multipart/form-data" id="deptForm">
+      {% csrf_token %}
+
+      {% for f in form %}
+        <div class="ap-field">
+          <label class="ap-label" for="{{ f.id_for_label }}">
+            {{ f.label }} {% if f.field.required %}<span class="ap-required">*</span>{% endif %}
+          </label>
+          {{ f }}
+          {% if f.help_text %}<div class="ap-help">{{ f.help_text|safe }}</div>{% endif %}
+          {% if f.errors %}<div class="ap-errors">{{ f.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="ap-actions">
+        <a href="{% url 'academics:dept_list' %}" class="ap-btn ap-btn-light">Cancelar</a>
+        <button class="ap-btn ap-btn-primary" id="btnSubmit" type="submit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  document.querySelectorAll('.ap-field').forEach(function (wrap) {
+    if (wrap.querySelector('.ap-errors')) {
+      const input = wrap.querySelector('input, select, textarea');
+      if (input) input.classList.add('ap-invalid');
+    }
+  });
+})();
+
+(function () {
+  document.querySelectorAll('textarea').forEach(function (ta) {
+    const fit = () => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; };
+    ta.addEventListener('input', fit); fit();
+  });
+})();
+
+(function () {
+  const form = document.getElementById('deptForm');
+  const btn = document.getElementById('btnSubmit');
+  if (!form || !btn) return;
+  form.addEventListener('submit', function () {
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+  });
+})();
+</script>
+{% endblock %}

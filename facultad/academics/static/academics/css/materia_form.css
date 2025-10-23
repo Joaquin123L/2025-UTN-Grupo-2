@@ -1,0 +1,133 @@
+:root {
+  --ap-bg: #f5f7fb;
+  --ap-card: #fff;
+  --ap-border: #e9eef5;
+  --ap-muted: #6b7280;
+  --ap-primary: #0d6efd;
+  --ap-danger: #dc3545;
+  --ap-shadow: 0 6px 16px rgba(17, 24, 39, .06);
+}
+
+/* ===== Base ===== */
+body { background: var(--ap-bg); }
+
+.ap-form-wrap{
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+.ap-title{
+  margin: 0 0 1rem;
+  font-weight: 800;
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+}
+
+.ap-card{
+  background: var(--ap-card);
+  border: 1px solid var(--ap-border);
+  border-radius: 16px;
+  box-shadow: var(--ap-shadow);
+  padding: 1.25rem 1.5rem;
+  overflow: visible; /* evita recortes */
+}
+
+/* ===== Campos ===== */
+.ap-field{ margin-bottom: 1rem; }
+
+.ap-label{
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-weight: 700;
+  margin-bottom: .35rem;
+}
+
+.ap-required{ color: var(--ap-primary); font-weight: 800; }
+
+/* ===== Widgets por defecto ===== */
+.ap-card input[type="text"],
+.ap-card input[type="email"],
+.ap-card input[type="url"],
+.ap-card input[type="number"],
+.ap-card select,
+.ap-card textarea{
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid var(--ap-border);
+  border-radius: 12px;
+  background: #fff;
+  padding: .65rem .85rem;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.ap-card textarea{
+  min-height: 110px;
+  resize: vertical;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
+}
+
+/* Focus */
+.ap-card input:focus,
+.ap-card select:focus,
+.ap-card textarea:focus{
+  border-color: rgba(13,110,253,.5);
+  box-shadow: 0 0 0 3px rgba(13,110,253,.12);
+}
+
+/* Text input largo: ellipsis */
+.ap-card input[type="text"]{
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Mensajes ===== */
+.ap-help{ color: var(--ap-muted); font-size: .9rem; margin-top: .25rem; }
+.ap-errors{ color: var(--ap-danger); font-size: .9rem; margin-top: .35rem; }
+.ap-invalid{
+  border-color: rgba(220,53,69,.55) !important;
+  box-shadow: 0 0 0 3px rgba(220,53,69,.12) !important;
+}
+
+/* ===== Botones ===== */
+.ap-actions{
+  display: flex;
+  gap: .6rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.ap-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  border-radius: 12px;
+  padding: .6rem 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: .18s;
+  line-height: 1;
+}
+
+.ap-btn-light{ background:#fff; border-color: var(--ap-border); color:#111827; }
+.ap-btn-light:hover{ border-color:#cbd5e1; box-shadow: 0 6px 16px rgba(13,110,253,.08); }
+
+.ap-btn-primary{ background: var(--ap-primary); color:#fff; }
+.ap-btn-primary:hover{ filter: brightness(.95); }
+.ap-btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* ===== (Opcional) Checkboxes booleanos inline ===== */
+.ap-field:has(> input[type="checkbox"]){
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+.ap-field:has(> input[type="checkbox"]) .ap-label{
+  margin: 0;
+}

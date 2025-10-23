@@ -1,0 +1,84 @@
+:root {
+    --ap-bg: #f5f7fb;
+    --ap-card: #fff;
+    --ap-border: #e9eef5;
+    --ap-muted: #6b7280;
+    --ap-primary: #0d6efd;
+    --ap-danger: #dc3545;
+    --ap-shadow: 0 6px 16px rgba(17, 24, 39, .06);
+}
+
+body {
+    background: var(--ap-bg);
+}
+
+.ap-delete-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    padding: 2rem 1rem;
+}
+
+.ap-card {
+    background: var(--ap-card);
+    border: 1px solid var(--ap-border);
+    border-radius: 16px;
+    box-shadow: var(--ap-shadow);
+    max-width: 520px;
+    width: 100%;
+    padding: 2rem 2.5rem;
+    text-align: center;
+}
+
+.ap-title {
+    font-weight: 800;
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
+    color: #111827;
+    margin-bottom: 1rem;
+}
+
+.ap-text {
+    color: #374151;
+    font-size: 1.05rem;
+    margin-bottom: 2rem;
+}
+
+.ap-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.ap-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    padding: .6rem 1.2rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: .18s ease;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.ap-btn-light {
+    background: #fff;
+    border: 1px solid var(--ap-border);
+    color: #111827;
+}
+
+.ap-btn-light:hover {
+    border-color: #cbd5e1;
+    box-shadow: var(--ap-shadow);
+}
+
+.ap-btn-danger {
+    background: var(--ap-danger);
+    color: #fff;
+}
+
+.ap-btn-danger:hover {
+    filter: brightness(.95);
+}

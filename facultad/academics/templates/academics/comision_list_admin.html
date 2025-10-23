@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Comisiones{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'academics/css/comision_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ap-list-wrap">
+  <div class="ap-card">
+    <div class="ap-head">
+      <h2>Comisiones</h2>
+      <a class="ap-btn ap-btn-primary" href="{% url 'academics:comision_create' %}">+ Nueva</a>
+    </div>
+
+    <table class="ap-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Materia(s) y Año(s)</th>
+          <th style="width:190px" class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for it in comisiones %}
+        <tr>
+          <td>{{ it.nombre }}</td>
+          <td>
+            {% with enlaces=it.materiacomisionanio_set.all %}
+              {% if enlaces %}
+              <div class="ap-rel">
+                {% for mca in enlaces %}
+                <span class="ap-chip">
+                  {{ mca.materia.nombre|default:mca.materia }}
+                  <small>· {{ mca.anio }}</small>
+                </span>
+                {% endfor %}
+              </div>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            {% endwith %}
+          </td>
+
+          <td class="text-end">
+            <div class="ap-actions-row">
+              <a class="ap-btn ap-btn-sm ap-btn-outline-secondary" href="{% url 'academics:comision_update' it.pk %}">Editar</a>
+              <a class="ap-btn ap-btn-sm ap-btn-outline-danger" href="{% url 'academics:comision_delete' it.pk %}">Eliminar</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="ap-empty">Sin registros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

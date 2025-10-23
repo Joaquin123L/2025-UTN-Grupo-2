@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ view.object|default_if_none:"Nueva" }} Comisión{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'academics/css/comision_form.css' %}">
+
+<section class="ap-form-wrap comision-form">
+  <h1 class="ap-title">{% if view.object %}Editar Comisión{% else %}Nueva Comisión{% endif %}</h1>
+
+  <div class="ap-card">
+    <form method="post">{% csrf_token %}
+
+      <div class="ap-field">
+        <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+        {{ form.nombre }}
+      </div>
+
+      <div class="ap-field">
+        <label for="{{ form.icono_url.id_for_label }}">Icono (URL)</label>
+        {{ form.icono_url }}
+        <div class="ap-small">Pegá la URL de un SVG o imagen.</div>
+      </div>
+
+      <div class="ap-field">
+        <label for="{{ form.imagen_url.id_for_label }}">Imagen (URL)</label>
+        <div class="image-tools">
+          {{ form.imagen_url }}
+          {% if view.object %}
+          <button type="button" class="ap-btn ap-btn-ghost js-clear-image">Vaciar imagen</button>
+          {% endif %}
+        </div>
+
+
+      </div>
+
+      {{ form.non_field_errors }}
+
+      <hr class="my-4">
+
+      <h3 style="font-weight:700; font-size:1.05rem; margin-bottom:.25rem;">Asignaciones académicas</h3>
+      <div class="ap-small mb-3">Para cada fila: Materia · Año · Titular · JTP (Ayudante opcional).</div>
+
+      {{ formset.management_form }}
+
+      <script type="text/html" id="mca-empty">
+  <div class="ap-mca-row mb-3" data-index="__prefix__">
+    <div class="ap-grid">
+      <div class="ap-field">
+        <label for="{{ formset.empty_form.materia.id_for_label|escape }}">Materia</label>
+        {{ formset.empty_form.materia }}
+      </div>
+      <div class="ap-field">
+        <label for="{{ formset.empty_form.anio.id_for_label|escape }}">Año</label>
+        {{ formset.empty_form.anio }}
+      </div>
+      <div class="ap-field">
+        <label for="{{ formset.empty_form.titular.id_for_label|escape }}">Titular</label>
+        {{ formset.empty_form.titular }}
+      </div>
+      <div class="ap-field">
+        <label for="{{ formset.empty_form.jtp.id_for_label|escape }}">JTP</label>
+        {{ formset.empty_form.jtp }}
+      </div>
+      <div class="ap-field ap-actions-cell">
+        <button type="button" class="ap-btn ap-btn-danger js-remove-row">Quitar</button>
+      </div>
+    </div>
+
+    <div class="ap-field" style="max-width:420px; margin-top:.75rem;">
+      <label for="{{ formset.empty_form.ayudante.id_for_label|escape }}">Ayudante (opcional)</label>
+      {{ formset.empty_form.ayudante }}
+    </div>
+
+    {% if formset.empty_form.id %}{{ formset.empty_form.id }}{% endif %}
+  </div>
+</script>
+
+
+      <div id="mca-forms">
+        {% for fs in formset %}
+        <div class="ap-mca-row mb-3" data-index="{{ forloop.counter0 }}">
+          <div class="ap-grid">
+            <div class="ap-field"><label for="{{ fs.materia.id_for_label }}">Materia</label>{{ fs.materia }}</div>
+            <div class="ap-field"><label for="{{ fs.anio.id_for_label }}">Año</label>{{ fs.anio }}</div>
+            <div class="ap-field"><label for="{{ fs.titular.id_for_label }}">Titular</label>{{ fs.titular }}</div>
+            <div class="ap-field"><label for="{{ fs.jtp.id_for_label }}">JTP</label>{{ fs.jtp }}</div>
+            <div class="ap-field ap-actions-cell">
+              {% if fs.instance.pk %}
+              {% if fs.DELETE %}
+              <input type="checkbox" name="{{ fs.DELETE.html_name }}" id="{{ fs.DELETE.id_for_label }}" hidden />
+              {% endif %}
+              <button type="button" class="ap-btn ap-btn-ghost js-vaciar-fila">Vaciar fila</button>
+              {% else %}
+              <button type="button" class="ap-btn ap-btn-danger js-remove-row">Quitar</button>
+              {% endif %}
+
+            </div>
+          </div>
+          <div class="ap-field" style="max-width:420px; margin-top:.75rem;">
+            <label for="{{ fs.ayudante.id_for_label }}">Ayudante (opcional)</label>
+            {{ fs.ayudante }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="ap-actions">
+        <button type="button" class="ap-btn ap-btn-light" id="add-mca">+ Agregar asignación</button>
+        <div>
+          <a href="{% url 'academics:comision_list' %}" class="ap-btn ap-btn-light">Cancelar</a>
+          <button class="ap-btn ap-btn-primary" type="submit">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+(function () {
+  const formEl     = document.querySelector(".comision-form form");
+  const container  = document.getElementById("mca-forms");
+  const addBtn     = document.getElementById("add-mca");
+  const tmpl       = document.getElementById("mca-empty");
+  const totalInput = document.getElementById("id_{{ formset.prefix }}-TOTAL_FORMS");
+
+  if (!formEl || !container || !addBtn || !tmpl || !totalInput) return;
+
+  const q  = (s, sc)=> (sc||document).querySelector(s);
+  const qa = (s, sc)=> Array.from((sc||document).querySelectorAll(s));
+
+  function clearRowFields(row){
+    qa("select,input,textarea", row).forEach(el => {
+      if (el.name && el.name.endsWith("-DELETE")) return;
+      el.value = "";
+      el.dispatchEvent(new Event("change", {bubbles:true}));
+    });
+  }
+
+  function isRowEmpty(row){
+    const val = (sel)=>{ const el=q(sel,row); return el ? (el.value||"").trim() : ""; };
+    return !val("select[name$='-materia']") &&
+           !val("[name$='-anio']") &&
+           !val("select[name$='-titular']") &&
+           !val("select[name$='-jtp']") &&
+           !val("select[name$='-ayudante']");
+  }
+
+  function markDelete(row){
+    const del = q("input[type='checkbox'][name$='-DELETE']", row);
+    if (del) del.checked = true;
+  }
+
+  function wireRowButtons(scope){
+    qa(".js-remove-row", scope).forEach(btn=>{
+      btn.addEventListener("click", () => {
+        const row = btn.closest(".ap-mca-row");
+        if (!row) return;
+        row.remove();
+        const current = parseInt(totalInput.value || "0", 10);
+        totalInput.value = String(Math.max(0, current - 1));
+      });
+    });
+
+    qa(".js-vaciar-fila", scope).forEach(btn=>{
+      btn.addEventListener("click", () => {
+        const row = btn.closest(".ap-mca-row");
+        if (row) clearRowFields(row);
+      });
+    });
+  }
+
+  // Inicial: filas existentes
+  wireRowButtons(container);
+
+  // Crear fila desde el prototipo <script type="text/html">
+  function createRowFromTemplate(idx){
+    const proto = tmpl.textContent || tmpl.innerText || "";
+    const html  = proto.replaceAll("__prefix__", idx);
+    const wrap  = document.createElement("div");
+    wrap.innerHTML = html.trim();
+    return wrap.firstElementChild;
+  }
+
+  // Agregar fila
+  addBtn.addEventListener("click", () => {
+    const idx = parseInt(totalInput.value || "0", 10);
+    const rowEl = createRowFromTemplate(idx);
+    if (!rowEl) return;
+    container.appendChild(rowEl);
+    totalInput.value = String(idx + 1);
+    wireRowButtons(rowEl);
+  });
+
+  // Preview por URL + limpiar imagen (solo en editar)
+  const urlInput    = q("input[name='imagen_url']", formEl);
+  const previewWrap = q("#ap-image-preview", formEl);
+  const previewImg  = q("#ap-image-preview-img", formEl);
+  const clearBtn    = q(".js-clear-image", formEl);
+
+  function showPrev(src){
+    if (!previewWrap || !previewImg) return;
+    if (src) { previewImg.src = src; previewWrap.style.display = ""; }
+    else { previewImg.removeAttribute("src"); previewWrap.style.display = "none"; }
+  }
+
+  if (urlInput){
+    showPrev((urlInput.value || "").trim());
+    urlInput.addEventListener("input", () => {
+      showPrev((urlInput.value || "").trim());
+    });
+  }
+
+  if (clearBtn){
+    clearBtn.addEventListener("click", () => {
+      if (urlInput) urlInput.value = "";
+      showPrev(null);
+    });
+  }
+
+  // Al enviar: marcar DELETE en filas vacías
+  formEl.addEventListener("submit", () => {
+    qa(".ap-mca-row", container).forEach(r => { if (isRowEmpty(r)) markDelete(r); });
+  });
+})();
+</script>
+
+{% endblock %}

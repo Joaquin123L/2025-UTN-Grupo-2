@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Confirmar eliminación{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'people/css/professor_confirm_delete.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ap-delete-wrap">
+  <div class="ap-card">
+    <h2 class="ap-title">Confirmar eliminación</h2>
+    <p class="ap-text">
+      ¿Seguro que querés eliminar <strong>{{ object }}</strong>?
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="ap-actions">
+        <a href="javascript:history.back()" class="ap-btn ap-btn-light">Cancelar</a>
+        <button class="ap-btn ap-btn-danger" type="submit">Eliminar</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

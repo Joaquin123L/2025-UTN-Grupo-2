@@ -17,6 +17,7 @@ from django.utils.translation import gettext
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.debug import sensitive_variables
 from django.contrib.auth import get_user_model
+from .models import User
 
 from people.validators import validate_utn_email
 
@@ -194,10 +195,9 @@ class SignupForm(forms.Form):
 from django.utils.text import slugify
 
 def make_unique_username(first_name: str, last_name: str, email: str | None = None) -> str:
-    base = slugify(f"{(first_name or '').strip()}.{(last_name or '').strip()}")  # joaquin.luberto
+    base = slugify(f"{(first_name or '').strip()}.{(last_name or '').strip()}")  
     base = base.replace("-", ".").strip(".")
     if not base:
-        # fallback si no hay nombre/apellido (o son vacíos)
         base = slugify((email or "user").split("@")[0]) or "user"
 
     max_len = UserModel._meta.get_field("username").max_length
@@ -210,3 +210,67 @@ def make_unique_username(first_name: str, last_name: str, email: str | None = No
         username = f"{base[:max_len - len(suf)]}{suf}"
         i += 1
     return username
+
+class ProfessorCreateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["email", "first_name", "last_name", "legajo"]
+        widgets = {
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+            "legajo": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+    def clean_email(self):
+        val = (self.cleaned_data.get("email") or "").strip().lower()
+        if not val:
+            raise ValidationError("Email es obligatorio.")
+        if User.objects.filter(email__iexact=val).exists():
+            raise ValidationError("Ya existe un usuario con este email.")
+        return val
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.username = user.email
+        if hasattr(User, "Role"):
+            user.rol = User.Role.PROFESOR
+        user.set_unusable_password()
+        if commit:
+            user.save()
+        return user
+
+
+class ProfessorUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["username", "first_name", "last_name", "email", "legajo"]
+        widgets = {
+            "username": forms.TextInput(attrs={"class": "form-control"}),
+            "first_name": forms.TextInput(attrs={"class": "form-control"}),
+            "last_name": forms.TextInput(attrs={"class": "form-control"}),
+            "email": forms.EmailInput(attrs={"class": "form-control"}),
+            "legajo": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+    def clean_username(self):
+        val = (self.cleaned_data.get("username") or "").strip()
+        if not val:
+            return val
+        qs = User.objects.filter(username__iexact=val)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("Ya existe un usuario con este username.")
+        return val
+
+    def clean_email(self):
+        val = (self.cleaned_data.get("email") or "").strip().lower()
+        if not val:
+            return val
+        qs = User.objects.filter(email__iexact=val)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise ValidationError("Ya existe un usuario con este email.")
+        return val
