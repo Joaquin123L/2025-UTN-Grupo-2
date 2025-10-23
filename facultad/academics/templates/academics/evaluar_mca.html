@@ -21,6 +21,7 @@
 
   <form method="post" novalidate>
     {% csrf_token %}
+    <input type="hidden" name="is_edit" value="{% if is_edit %}1{% else %}0{% endif %}">
 
     {% if titular %}
     <div class="eva-card">
@@ -38,8 +39,8 @@
       </div>
       <a href="#" class="eva-prof">{{ titular.get_full_name|default:titular.username }}</a>
       <div class="eva-sub">Evaluá al profesor por cómo da la materia, su puntualidad y los tratos</div>
-      <input type="hidden" name="titular_score" id="titular_score">
-      <textarea name="titular_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+      <input type="hidden" name="titular_score" id="titular_score" value="{{ titular_score }}">
+      <textarea name="titular_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo">{{ titular_comment }}</textarea>
     </div>
     {% endif %}
 
@@ -59,8 +60,8 @@
       </div>
       <a href="#" class="eva-prof">{{ jtp.get_full_name|default:jtp.username }}</a>
       <div class="eva-sub">Evaluá al profesor por cómo da la materia, su puntualidad y los tratos</div>
-      <input type="hidden" name="jtp_score" id="jtp_score">
-      <textarea name="jtp_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+      <input type="hidden" name="jtp_score" id="jtp_score" value="{{ jtp_score }}">
+      <textarea name="jtp_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo">{{ jtp_comment }}</textarea>
     </div>
     {% endif %}
 
@@ -78,8 +79,8 @@
         </div>
       </div>
       <div class="eva-sub">Evaluá la comisión por su dificultad, sus evaluaciones (en relación a las clases) y el material</div>
-      <input type="hidden" name="comision_score" id="comision_score">
-      <textarea name="comision_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+      <input type="hidden" name="comision_score" id="comision_score" value="{{ comision_score }}">
+      <textarea name="comision_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo">{{ comision_comment }}</textarea>
     </div>
 
     <div class="eva-card">
@@ -96,13 +97,16 @@
         </div>
       </div>
       <div class="eva-sub">Evaluá la materia por su dificultad (una estrella es muy fácil y cinco estrellas es muy difícil)</div>
-      <input type="hidden" name="materia_score" id="materia_score">
-      <textarea name="materia_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo"></textarea>
+      <input type="hidden" name="materia_score" id="materia_score" value="{{ materia_score }}">
+      <textarea name="materia_comment" rows="2" class="eva-textarea" placeholder="Agrega un comentario, es anónimo">{{ materia_comment }}</textarea>
     </div>
 
     <div class="eva-actions-right">
-      <button class="btn btn-rect" type="submit">Enviar</button>
-    </div>
+  <button class="btn btn-rect" type="submit">
+    {% if is_edit %}Editar{% else %}Enviar{% endif %}
+  </button>
+</div>
+
   </form>
 
   <script>
@@ -133,6 +137,7 @@
         });
       });
 
+      // 🔥 pintar con el valor inicial (edición)
       paint(parseInt(hidden.value || 0, 10));
     }
 

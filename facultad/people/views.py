@@ -361,6 +361,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
                     "comentario": profanity.censor((it.comentario or "").strip()),
+                    "mca_id": mca.id,                           # 👈 clave
                 })
             elif it.target_type == ResenaItem.Target.COMISION:
                 com = mca.comision.nombre if mca.comision else "—"
@@ -372,6 +373,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
                     "comentario": profanity.censor((it.comentario or "").strip()),
+                    "mca_id": mca.id,                           # 👈 clave
                 })
             elif it.target_type in (ResenaItem.Target.TITULAR, ResenaItem.Target.JTP):
                 rol = "Titular" if it.target_type == ResenaItem.Target.TITULAR else "JTP"
@@ -386,6 +388,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
                     "comentario": profanity.censor((it.comentario or "").strip()),
+                    "mca_id": mca.id,                           # 👈 clave
                 })
 
         ctx.update({
@@ -403,6 +406,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
             "dashboard_carrera": carrera_elegida or "Plan",
         })
         return ctx
+
     
 class SubirAvatarView(LoginRequiredMixin, View):
     login_url = "people:login"
