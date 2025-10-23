@@ -6,13 +6,19 @@ from .forms import SignupForm, UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q, Avg, Count
 from people.models import User
-from academics.models import MateriaComisionAnio, ResenaItem, Resena, Nota
+from academics.models import MateriaComisionAnio, ResenaItem, Resena, Nota, Materia
 from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.timezone import localtime
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView
+import unicodedata
+from collections import Counter
+from django.conf import settings
+from academics.plan_loader import load_plan_rows
+from better_profanity import profanity
+
 from django.views import View
 from django.urls import NoReverseMatch 
 from allauth.account.views import SignupView
@@ -170,6 +176,95 @@ def perfil_profesor(request, username):
         },
     )
 
+
+def _norm(s: str) -> str:
+    """Normaliza para comparar: minúsculas, sin tildes, solo alfanum y espacios simples."""
+    if not s:
+        return ""
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    s = "".join(ch if ch.isalnum() or ch.isspace() else " " for ch in s.lower())
+    s = " ".join(s.split())
+    return s
+
+def _get_user_carrera(user) -> str | None:
+    """
+    Intenta leer la carrera desde varios atributos/relaciones comunes.
+    Devuelve el string tal cual (sin normalizar) si lo encuentra, o None.
+    """
+    # 1) Atributos directos frecuentes
+    direct_attrs = ("carrera", "career", "major", "programa", "plan_carrera", "plan", "titulo")
+    for a in direct_attrs:
+        val = getattr(user, a, None)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+        # si es un objeto con 'nombre'/'name'
+        if hasattr(val, "nombre"):
+            return str(val.nombre).strip()
+        if hasattr(val, "name"):
+            return str(val.name).strip()
+
+    # 2) Relaciones típicas de perfil
+    rels = ("perfil", "profile", "userprofile", "studentprofile", "alumno", "estudiante")
+    for rel in rels:
+        obj = getattr(user, rel, None)
+        if obj:
+            for a in direct_attrs:
+                val = getattr(obj, a, None)
+                if isinstance(val, str) and val.strip():
+                    return val.strip()
+                if hasattr(val, "nombre"):
+                    return str(val.nombre).strip()
+                if hasattr(val, "name"):
+                    return str(val.name).strip()
+
+    return None
+
+def _pick_carrera_for_user(plan_rows: list[dict], user) -> tuple[str | None, list[dict]]:
+    """
+    Elige la carrera adecuada para el usuario comparando su string con las
+    carreras presentes en el plan. Devuelve (carrera_elegida, plan_filtrado).
+    """
+    if not plan_rows:
+        return (None, [])
+
+    # carreras disponibles en archivo
+    carreras = sorted({r["carrera"] for r in plan_rows if r.get("carrera")})
+    if not carreras:
+        return (None, plan_rows)
+
+    # 1) user -> string candidata
+    user_raw = _get_user_carrera(user)
+    user_norm = _norm(user_raw or "")
+
+    # 2) si no hay nada en el usuario, usar settings ó la más frecuente
+    if not user_norm:
+        default_c = getattr(settings, "ACADEMICS_PLAN_DEFAULT_CARRERA", None)
+        if default_c:
+            chosen = default_c
+        else:
+            chosen = Counter(r["carrera"] for r in plan_rows).most_common(1)[0][0]
+        return (chosen, [r for r in plan_rows if r["carrera"] == chosen])
+
+    # 3) Fuzzy: elegimos la carrera cuyo _norm() más se “contiene”/parece
+    def score(target: str) -> int:
+        t = _norm(target)
+        # heurística simple: tokens en común + contains
+        tokens_u = set(user_norm.split())
+        tokens_t = set(t.split())
+        inter = len(tokens_u & tokens_t)
+        contains = 1 if (user_norm in t or t in user_norm) else 0
+        return inter * 10 + contains  # pondero fuerte tokens
+
+    best = max(carreras, key=score)
+    # si la mejor coincidencia tiene score 0, caemos al default / más frecuente
+    if score(best) == 0:
+        default_c = getattr(settings, "ACADEMICS_PLAN_DEFAULT_CARRERA", None)
+        chosen = default_c or Counter(r["carrera"] for r in plan_rows).most_common(1)[0][0]
+    else:
+        chosen = best
+
+    return (chosen, [r for r in plan_rows if r["carrera"] == chosen])
+
 class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
     template_name = "people/perfil_usuario.html"
     login_url = "people:login"
@@ -178,15 +273,54 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
         ctx = super().get_context_data(**kwargs)
         u = self.request.user
 
+        # Promedio (igual que tenías)
         promedio = (
             Nota.objects.filter(alumno=u, nota__isnull=False)
             .aggregate(val=Avg("nota"))["val"]
         )
 
+        # Distribución por estado (sobre Notas existentes)
         rows = Nota.objects.filter(alumno=u).values("estado").annotate(c=Count("id"))
-        tot = sum(r["c"] for r in rows) or 1
-        pct = {r["estado"]: round(100 * r["c"] / tot, 2) for r in rows}
+        tot_notas = sum(r["c"] for r in rows) or 0
+        pct_estados = {r["estado"]: round(100 * r["c"] / (tot_notas or 1), 2) for r in rows}
+        count_by_estado = {r["estado"]: r["c"] for r in rows}
 
+        # === Donut: usar carrera del usuario para filtrar el plan ===
+        all_plan = list(load_plan_rows())  # lee plan.json/csv
+        carrera_elegida, plan = _pick_carrera_for_user(all_plan, u)
+        total_plan = len(plan)
+
+        # Materias con alguna nota del usuario (distinct por materia)
+        cursadas_ids = set(
+            Nota.objects.filter(alumno=u)
+            .values_list("mca__materia_id", flat=True)
+            .distinct()
+        )
+
+        # nombre -> id (si no existe en BD, la materia igual cuenta como pendiente)
+        by_name = {m.nombre.lower(): m.id for m in Materia.objects.only("id", "nombre")}
+        tocadas_en_plan = 0
+        for r in plan:
+            mid = by_name.get(r["materia"].lower())
+            if mid and mid in cursadas_ids:
+                tocadas_en_plan += 1
+        pendientes_count = max(total_plan - tocadas_en_plan, 0)
+
+        # Contadores de estados ya cursados
+        cursando_count = count_by_estado.get(Nota.Estado.CURSANDO, 0)
+        promo_count    = count_by_estado.get(Nota.Estado.PROMOCIONADA, 0)
+        apro_count     = count_by_estado.get(Nota.Estado.APROBADA, 0)
+
+        donut_counts = {
+            "Cursando": cursando_count,
+            "Promocionada": promo_count,
+            "Aprobada": apro_count,
+            "Pendientes": pendientes_count if total_plan else 0,
+        }
+        donut_total = sum(donut_counts.values()) or 1
+        donut_pct = {k: round(v * 100 / donut_total, 2) for k, v in donut_counts.items()}
+
+        # === Lo tuyo de “evaluar materias” + comentarios (sin cambios funcionales)
         mcas_para_evaluar = (
             MateriaComisionAnio.objects
             .filter(
@@ -218,7 +352,6 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
         comentarios_todos = []
         for it in base_qs:
             mca = it.resena.mca
-
             if it.target_type == ResenaItem.Target.MATERIA:
                 comentarios_todos.append({
                     "tipo": "Materia",
@@ -230,7 +363,6 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "comentario": profanity.censor((it.comentario or "").strip()),
                     "mca_id": mca.id,                           # 👈 clave
                 })
-
             elif it.target_type == ResenaItem.Target.COMISION:
                 com = mca.comision.nombre if mca.comision else "—"
                 comentarios_todos.append({
@@ -243,7 +375,6 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "comentario": profanity.censor((it.comentario or "").strip()),
                     "mca_id": mca.id,                           # 👈 clave
                 })
-
             elif it.target_type in (ResenaItem.Target.TITULAR, ResenaItem.Target.JTP):
                 rol = "Titular" if it.target_type == ResenaItem.Target.TITULAR else "JTP"
                 prof = (it.titular or it.jtp)
@@ -262,11 +393,17 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
 
         ctx.update({
             "promedio": promedio,
-            "pct": pct,
+            "pct": pct_estados,
             "mcas_para_evaluar": mcas_para_evaluar,
             "comentarios_todos": comentarios_todos,
             "comentarios_total": len(comentarios_todos),
             "orden": orden,
+
+            # donut
+            "donut_counts": donut_counts,
+            "donut_pct": donut_pct,
+            "donut_total": donut_total,
+            "dashboard_carrera": carrera_elegida or "Plan",
         })
         return ctx
 

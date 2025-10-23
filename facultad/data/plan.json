@@ -1,0 +1,191 @@
+[
+  {
+    "materia": "Algoritmos y Estructuras de Datos I",
+    "anio": 1,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Lógica y Estructuras Discretas",
+    "anio": 1,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Arquitectura de Computadoras",
+    "anio": 1,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Sistemas y Procesos de Negocio",
+    "anio": 1,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Análisis Matemático I",
+    "anio": 1,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Física I",
+    "anio": 1,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Álgebra y Geometría Analítica",
+    "anio": 1,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+
+  {
+    "materia": "Análisis de Sistemas de Información",
+    "anio": 2,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Sistemas Operativos",
+    "anio": 2,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Sintaxis y Semántica de los Lenguajes",
+    "anio": 2,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Paradigmas de Programación",
+    "anio": 2,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Física II",
+    "anio": 2,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Análisis Matemático II",
+    "anio": 2,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Ingeniería y Sociedad",
+    "anio": 2,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+
+  {
+    "materia": "Análisis Numérico",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Diseño de Sistemas de Información",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Probabilidad y Estadística",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Base de Datos",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Comunicación de Datos",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Desarrollo de Software",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Economía",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Seminario Integrador",
+    "anio": 3,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+
+  {
+    "materia": "Administración de Recursos",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Ingeniería de Software",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Simulación",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Investigación Operativa",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Tecnologías para la Automatización",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Redes de Datos",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Legislación",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Habilitación Profesional",
+    "anio": 4,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+
+  {
+    "materia": "Sistemas de Gestión",
+    "anio": 5,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Gestión Gerencial",
+    "anio": 5,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Proyecto Final",
+    "anio": 5,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Inteligencia Artificial",
+    "anio": 5,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Ciencia de Datos",
+    "anio": 5,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Seguridad en los Sistemas de Información",
+    "anio": 5,
+    "carrera": "Ingeniería en Sistemas de Información"
+  },
+  {
+    "materia": "Práctica Profesional Supervisada",
+    "anio": 5,
+    "carrera": "Ingeniería en Sistemas de Información"
+  }
+]
