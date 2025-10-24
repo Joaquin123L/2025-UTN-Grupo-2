@@ -22,7 +22,8 @@ urlpatterns = [
     path("comisiones/nueva/", views.ComisionCreateView.as_view(), name="comision_create"),
     path("comisiones/<int:pk>/editar/", views.ComisionUpdateView.as_view(), name="comision_update"),
     path("comisiones/<int:pk>/eliminar/", views.ComisionDelete.as_view(), name="comision_delete"),
-
+    path("mca/<int:mca_id>/resena/editar/", views.editar_resena_mca, name="editar_resena_mca"),
+    path("mca/<int:mca_id>/resena/eliminar/", views.eliminar_resena_mca, name="eliminar_resena_mca"),
 ]
 
 
