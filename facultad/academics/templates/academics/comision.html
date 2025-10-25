@@ -36,8 +36,8 @@
   {% for mca, rating in mca_with_rating %}
     {% url 'academics:perfil_comision' materia.id mca.comision.id current_year as comision_url %}
 
-     {% if mca.comision.profesor %}{{ mca.comision.profesor.last_name }}, {{ mca.comision.profesor.first_name }}{% endif %}
-     
+    {% if mca.comision.profesor %}{{ mca.comision.profesor.last_name }}, {{ mca.comision.profesor.first_name }}{% endif %}
+
 
     {% if mca.titular %}{% url 'academics:perfil_profesor' mca.titular.username as titular_url %}{% endif %}
     {% if mca.jtp %}{% url 'academics:perfil_profesor' mca.jtp.username as jtp_url %}{% endif %}
