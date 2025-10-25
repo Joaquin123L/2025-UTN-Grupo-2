@@ -6,6 +6,7 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         ALUMNO = "ALU", "Alumno"
         PROFESOR = "PRO", "Profesor"
+        ADMIN = "ADM", "Administrador"
 
     rol = models.CharField(max_length=3, choices=Role.choices)
     legajo = models.CharField(max_length=20, unique=True, null=True, blank=True)  # solo alumnos
@@ -14,3 +15,6 @@ class User(AbstractUser):
     imagen_perfil = models.ImageField(
         upload_to="profiles/", null=True, blank=True
     )
+    @property
+    def is_admin(self) -> bool:
+        return self.is_superuser or self.rol == self.Role.ADMIN 

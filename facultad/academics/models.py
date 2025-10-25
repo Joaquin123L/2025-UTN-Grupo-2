@@ -18,10 +18,6 @@ class Department(models.Model):
     def __str__(self):
         return self.nombre
 
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.nombre)
-        super().save(*args, **kwargs)
 class Materia(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
     eliminado = models.BooleanField(default=False)

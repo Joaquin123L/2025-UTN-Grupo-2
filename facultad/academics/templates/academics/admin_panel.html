@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Panel Administrativo{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'academics/css/admin_panel.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ap-container">
+  <header class="ap-header">
+    <h2>Panel Administrativo</h2>
+    <p>Gestioná las secciones del sistema</p>
+  </header>
+
+  <section class="ap-grid">
+    <a href="{% url 'academics:dept_list' %}" class="ap-card ap-dept">
+      <div class="ap-topbar"></div>
+      <div class="ap-card-body">
+        <h3>Departamentos</h3>
+        <p>Gestiona los departamentos académicos.</p>
+      </div>
+    </a>
+
+    <a href="{% url 'academics:materia_list' %}" class="ap-card ap-mat">
+      <div class="ap-topbar"></div>
+      <div class="ap-card-body">
+        <h3>Materias</h3>
+        <p>Gestioná el catálogo de materias.</p>
+      </div>
+    </a>
+
+    <a href="{% url 'academics:comision_list' %}" class="ap-card ap-com">
+      <div class="ap-topbar"></div>
+      <div class="ap-card-body">
+        <h3>Comisiones</h3>
+        <p>Administrá comisiones y asignaciones.</p>
+      </div>
+    </a>
+
+    <a href="{% url 'people:professor_list' %}" class="ap-card ap-prof">
+      <div class="ap-topbar"></div>
+      <div class="ap-card-body">
+        <h3>Profesores</h3>
+        <p>Administrá los profesores.</p>
+      </div>
+    </a>
+  </section>
+</div>
+{% endblock %}

@@ -32,15 +32,41 @@
     </div>
   </div>
 
-  <section id="grid" class="aa-grid">
-    {% for mca, rating in mca_with_rating %}
-  {% url 'academics:perfil_comision' materia.id mca.comision.id current_year as comision_url %}
-  {% if mca.titular %}{% url 'academics:perfil_profesor' mca.titular.username as titular_url %}{% endif %}
-  {% if mca.jtp %}{% url 'academics:perfil_profesor' mca.jtp.username as jtp_url %}{% endif %}
-  {% include "academics/Components/card.html" with title=mca.comision.nombre image_url=mca.comision.imagen icon=mca.comision.icono badge=mca.comision.badge rating=rating titular=mca.titular.first_name|add:" "|add:mca.titular.last_name|default:"A confirmar" jtp=mca.jtp.first_name|add:" "|add:mca.jtp.last_name|default:"A confirmar" titular_url=titular_url|default_if_none:"" jtp_url=jtp_url|default_if_none:"" href=comision_url %}
-{% endfor %}
+ <section id="grid" class="aa-grid">
+  {% for mca, rating in mca_with_rating %}
+    {% url 'academics:perfil_comision' materia.id mca.comision.id current_year as comision_url %}
 
-  </section>
+    {% if mca.comision.profesor %}
+      {{ mca.comision.profesor.last_name }}, {{ mca.comision.profesor.first_name }}
+    {% else %}
+      — Sin profesor —
+    {% endif %}
+
+    {% if mca.titular %}{% url 'academics:perfil_profesor' mca.titular.username as titular_url %}{% endif %}
+    {% if mca.jtp %}{% url 'academics:perfil_profesor' mca.jtp.username as jtp_url %}{% endif %}
+
+    {# --- nombres seguros para titular y jtp --- #}
+    {% if mca.titular %}
+      {% with titular_name=mca.titular.first_name|add:" "|add:mca.titular.last_name %}
+        {% if mca.jtp %}
+          {% with jtp_name=mca.jtp.first_name|add:" "|add:mca.jtp.last_name %}
+            {% include "academics/Components/card.html" with title=mca.comision.nombre image_url=mca.comision.imagen icon=mca.comision.icono badge=mca.comision.badge rating=rating titular=titular_name jtp=jtp_name titular_url=titular_url|default_if_none:"" jtp_url=jtp_url|default_if_none:"" href=comision_url %}
+          {% endwith %}
+        {% else %}
+          {% include "academics/Components/card.html" with title=mca.comision.nombre image_url=mca.comision.imagen icon=mca.comision.icono badge=mca.comision.badge rating=rating titular=titular_name jtp="A confirmar" titular_url=titular_url|default_if_none:"" jtp_url="" href=comision_url %}
+        {% endif %}
+      {% endwith %}
+    {% else %}
+      {% if mca.jtp %}
+        {% with jtp_name=mca.jtp.first_name|add:" "|add:mca.jtp.last_name %}
+          {% include "academics/Components/card.html" with title=mca.comision.nombre image_url=mca.comision.imagen icon=mca.comision.icono badge=mca.comision.badge rating=rating titular="A confirmar" jtp=jtp_name titular_url="" jtp_url=jtp_url|default_if_none:"" href=comision_url %}
+        {% endwith %}
+      {% else %}
+        {% include "academics/Components/card.html" with title=mca.comision.nombre image_url=mca.comision.imagen icon=mca.comision.icono badge=mca.comision.badge rating=rating titular="A confirmar" jtp="A confirmar" titular_url="" jtp_url="" href=comision_url %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+</section>
 
 </div>
 
