@@ -4,7 +4,7 @@ from django.contrib.auth import login, authenticate
 from django.urls import reverse_lazy
 from .forms import SignupForm, UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg, Count, Exists, OuterRef, Q
 from people.models import User
 from academics.models import MateriaComisionAnio, ResenaItem, Resena, Nota, Materia
 from django.contrib.auth import get_user_model
@@ -27,7 +27,6 @@ from django.urls import reverse_lazy
 from django.views.generic import  CreateView, UpdateView, DeleteView
 from .models import User as UserModel
 from .forms import ProfessorCreateForm, ProfessorUpdateForm
-
 
 
 User = get_user_model()
@@ -487,8 +486,23 @@ class ProfessorDeleteView(LoginRequiredMixin, DeleteView):
     login_url = "people:login"
 
     def get_queryset(self):
-        # solo permite borrar PROFESORES
-        qs = super().get_queryset()
-        if hasattr(UserModel, "Role"):
-            qs = qs.filter(rol=UserModel.Role.PROFESOR)
-        return qs
+        # Que la URL exista para cualquier profesor
+        return UserModel.objects.filter(rol=UserModel.Role.PROFESOR)
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        # Bloqueá si tiene vínculos
+        has_links = (
+            self.object.materias_como_titular.exists()
+            or self.object.materias_como_jtp.exists()
+            or self.object.materias_como_ayudante.exists()
+            or self.object.resenas_como_titular.exists()
+            or self.object.resenas_como_jtp.exists()
+        )
+
+        if has_links:
+            messages.error(request, "No se puede eliminar: el profesor tiene materias o reseñas asociadas.")
+            return redirect(self.success_url)
+
+        return super().delete(request, *args, **kwargs)

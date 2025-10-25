@@ -11,44 +11,79 @@
   <h2 class="ap-title">Materia: {{ view.object.nombre|default:"Nueva" }}</h2>
 
   <div class="ap-card">
-    <form method="post" id="matForm">
+    <form method="post" id="matForm"
+      action="{% if view.object.pk %}{% url 'academics:materia_update' view.object.pk %}
+              {% else %}{% url 'academics:materia_create' %}{% endif %}">
       {% csrf_token %}
 
-      {% for f in form %}
-        {% if f.name != 'eliminado' or view.object.pk %}
-          <div class="ap-field">
-            <label class="ap-label" for="{{ f.id_for_label }}">
-              {{ f.label }} {% if f.field.required %}<span class="ap-required">*</span>{% endif %}
-            </label>
+      <div class="ap-field">
+        <label class="ap-label" for="{{ form.nombre.id_for_label }}">
+          {{ form.nombre.label }}{% if form.nombre.field.required %}<span class="ap-required">*</span>{% endif %}
+        </label>
+        {{ form.nombre }}
+        {% if form.nombre.errors %}<div class="ap-errors">{{ form.nombre.errors }}</div>{% endif %}
+      </div>
 
-            {# --- ICONO (SVG o URL) --- #}
-            {% if f.name == 'icono' %}
-              {{ f }}
-              <div class="ap-help">
-                Pegá el <strong>SVG inline</strong> o una <strong>URL</strong> a un SVG/imagen.
-              </div>
+      <div class="ap-field">
+        <label class="ap-label" for="{{ form.departamento.id_for_label }}">
+          {{ form.departamento.label }}{% if form.departamento.field.required %}<span class="ap-required">*</span>{% endif %}
+        </label>
+        {{ form.departamento }}
+        {% if form.departamento.errors %}<div class="ap-errors">{{ form.departamento.errors }}</div>{% endif %}
+      </div>
 
-            {# --- IMAGEN (solo URL, sin preview) --- #}
-            {% elif f.name == 'imagen' %}
-              {{ f }}
-              <div class="ap-help">
-                Pegá la <strong>URL</strong> de la imagen (JPG/PNG/SVG, etc.).
-              </div>
+      <div class="ap-field">
+        <label class="ap-label" for="{{ form.descripcion.id_for_label }}">
+          {{ form.descripcion.label }}{% if form.descripcion.field.required %}<span class="ap-required">*</span>{% endif %}
+        </label>
+        {{ form.descripcion }}
+        {% if form.descripcion.help_text %}<div class="ap-help">{{ form.descripcion.help_text }}</div>{% endif %}
+        {% if form.descripcion.errors %}<div class="ap-errors">{{ form.descripcion.errors }}</div>{% endif %}
+      </div>
 
-            {# --- RESTO DE CAMPOS --- #}
-            {% else %}
-              {{ f }}
-              {% if f.help_text %}
-                <div class="ap-help">{{ f.help_text }}</div>
-              {% endif %}
-            {% endif %}
+      <hr>
 
-            {% if f.errors %}
-              <div class="ap-errors">{{ f.errors }}</div>
-            {% endif %}
-          </div>
-        {% endif %}
-      {% endfor %}
+     {# --- IMAGEN (URL) --- #}
+<div class="ap-field">
+  <label class="ap-label" for="{{ form.imagen_url.id_for_label }}">{{ form.imagen_url.label }}</label>
+  {{ form.imagen_url }}
+  <div class="ap-help">Pegá la <strong>URL</strong> de la imagen (JPG/PNG/SVG).</div>
+  {% if form.imagen_url.errors %}<div class="ap-errors">{{ form.imagen_url.errors }}</div>{% endif %}
+
+  {# PREVIEW de la imagen guardada (si existe) #}
+  {% if view.object and view.object.imagen %}
+    <div class="mt-2">
+      <img src="{{ view.object.imagen.url }}" alt="Imagen actual" style="max-width:240px;height:auto;border-radius:8px;">
+      <div class="ap-help">Archivo actual: {{ view.object.imagen.name }}</div>
+    </div>
+  {% endif %}
+</div>
+
+{# --- ICONO (URL) --- #}
+<div class="ap-field">
+  <label class="ap-label" for="{{ form.icono_url.id_for_label }}">{{ form.icono_url.label }}</label>
+  {{ form.icono_url }}
+  <div class="ap-help">Pegá una <strong>URL</strong> a un SVG/imagen.</div>
+  {% if form.icono_url.errors %}<div class="ap-errors">{{ form.icono_url.errors }}</div>{% endif %}
+
+  {# PREVIEW del icono guardado #}
+  {% if view.object %}
+    {% if view.object.icono and view.object.icono.url %}
+      {# icono es File/ImageField #}
+      <div class="mt-2">
+        <img src="{{ view.object.icono.url }}" alt="Icono actual" style="max-width:120px;height:auto;">
+        <div class="ap-help">Archivo actual: {{ view.object.icono.name }}</div>
+      </div>
+    {% elif view.object.icono %}
+      {# icono es Char/URLField (texto con URL) #}
+      <div class="mt-2">
+        <img src="{{ view.object.icono }}" alt="Icono actual" style="max-width:120px;height:auto;">
+        <div class="ap-help">URL actual: {{ view.object.icono }}</div>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
 
       <div class="ap-actions">
         <a href="{% url 'academics:materia_list' %}" class="ap-btn ap-btn-light">Cancelar</a>
@@ -59,7 +94,6 @@
 </div>
 
 <script>
-  // === marcar campos con error ===
   (function () {
     document.querySelectorAll('.ap-field').forEach(function (wrap) {
       if (wrap.querySelector('.ap-errors')) {
@@ -68,28 +102,17 @@
       }
     });
   })();
-
-  // === autosize de textarea ===
   (function () {
     document.querySelectorAll('textarea').forEach(function (ta) {
-      const fit = () => {
-        ta.style.height = 'auto';
-        ta.style.height = (ta.scrollHeight + 2) + 'px';
-      };
-      ta.addEventListener('input', fit);
-      fit();
+      const fit = () => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; };
+      ta.addEventListener('input', fit); fit();
     });
   })();
-
-  // === evitar doble submit ===
   (function () {
     const form = document.getElementById('matForm');
     const btn = document.getElementById('btnSubmit');
     if (!form || !btn) return;
-    form.addEventListener('submit', function () {
-      btn.disabled = true;
-      btn.textContent = 'Guardando...';
-    });
+    form.addEventListener('submit', function () { btn.disabled = true; btn.textContent = 'Guardando...'; });
   })();
 </script>
 {% endblock %}

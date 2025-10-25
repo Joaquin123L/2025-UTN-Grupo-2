@@ -12,7 +12,7 @@
       </a>
     {% endif %}
 
-    {% if request.user.is_authenticated %}
+    {% if request.user.is_authenticated and request.user.rol != "ADM" %}
       <div class="navbar__right">
         <a class="nav-avatar" href="{% url 'people:perfil' %}" title="Mi perfil">
           {% if request.user.imagen_perfil %}
@@ -24,7 +24,7 @@
           {% endif %}
         </a>
       </div>
-    {% else %}
+    {% elif not request.user.is_authenticated and request.user.rol == "ADM" %}
       <div class="navbar__right">
         <a class="btn btn-light btn-sm" href="{% url 'people:register' %}">Registrate</a>
         <a class="btn btn-light btn-sm" href="{% url 'people:login' %}">Iniciar sesión</a>

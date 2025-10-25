@@ -11,7 +11,9 @@
   <h2 class="ap-title">Departamento: {{ view.object.nombre|default:"Nuevo" }}</h2>
 
   <div class="ap-card">
-    <form method="post" enctype="multipart/form-data" id="deptForm">
+    <form method="post" id="deptForm"
+          action="{% if view.object.pk %}{% url 'academics:dept_update' view.object.pk %}
+                  {% else %}{% url 'academics:dept_create' %}{% endif %}">
       {% csrf_token %}
 
       {% for f in form %}
@@ -19,7 +21,32 @@
           <label class="ap-label" for="{{ f.id_for_label }}">
             {{ f.label }} {% if f.field.required %}<span class="ap-required">*</span>{% endif %}
           </label>
+
           {{ f }}
+
+          {# --- PREVIEW IMAGEN --- #}
+          {% if f.name == "imagen_url" and view.object and view.object.imagen %}
+            <div class="mt-2">
+              <img src="{{ view.object.imagen.url }}" alt="Imagen actual"
+                   style="max-width:240px;height:auto;border-radius:8px;">
+              <div class="ap-help">Archivo actual: {{ view.object.imagen.name }}</div>
+            </div>
+          {% endif %}
+
+          {# --- PREVIEW ICONO (CharField: URL o SVG inline) --- #}
+          {% if f.name == "icono_url" and view.object and view.object.icono %}
+            <div class="mt-2">
+              {% if view.object.icono|slice:":4" == "<svg" %}
+                <div style="max-width:120px;">{{ view.object.icono|safe }}</div>
+                <div class="ap-help">SVG inline guardado</div>
+              {% else %}
+                <img src="{{ view.object.icono }}" alt="Icono actual"
+                     style="max-width:120px;height:auto;" onerror="this.remove();">
+                <div class="ap-help">URL actual: {{ view.object.icono }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+
           {% if f.help_text %}<div class="ap-help">{{ f.help_text|safe }}</div>{% endif %}
           {% if f.errors %}<div class="ap-errors">{{ f.errors }}</div>{% endif %}
         </div>
@@ -42,14 +69,12 @@
     }
   });
 })();
-
 (function () {
   document.querySelectorAll('textarea').forEach(function (ta) {
     const fit = () => { ta.style.height = 'auto'; ta.style.height = (ta.scrollHeight + 2) + 'px'; };
     ta.addEventListener('input', fit); fit();
   });
 })();
-
 (function () {
   const form = document.getElementById('deptForm');
   const btn = document.getElementById('btnSubmit');

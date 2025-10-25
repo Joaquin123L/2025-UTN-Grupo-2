@@ -502,10 +502,16 @@ class ComisionBaseMixin:
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        if self.request.POST:
-            ctx["formset"] = MCAFormSet(self.request.POST, instance=self.object)
+
+        # Detectar SI y SOLO SI vino el formset (management form)
+        def _has_formset_management(post):
+            return ("mca-TOTAL_FORMS" in post) or ("materiacomisionanio_set-TOTAL_FORMS" in post)
+
+        if self.request.method == "POST" and _has_formset_management(self.request.POST):
+            ctx["formset"] = MCAFormSet(self.request.POST, instance=self.object, prefix="mca")
         else:
-            ctx["formset"] = MCAFormSet(instance=self.object)
+            # Unbound: NO vino formset en el POST (o estás en GET)
+            ctx["formset"] = MCAFormSet(instance=self.object, prefix="mca")
 
         # Para el filtro "Departamento → Materia" (solo UX)
         departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
@@ -518,16 +524,29 @@ class ComisionBaseMixin:
         return ctx
 
     def form_valid(self, form):
-        ctx = self.get_context_data()
-        formset = ctx["formset"]
+        # Guardar la comisión
         self.object = form.save()
-        if formset.is_valid():
-            formset.instance = self.object
-            formset.save()
-            messages.success(self.request, "Comisión guardada correctamente.")
-            return redirect(self.get_success_url())
-        return self.render_to_response(self.get_context_data(form=form))
-    
+
+        # ¿Realmente vino el formset en el POST? (solo si están las claves del management form)
+        post = self.request.POST
+        has_formset = ("mca-TOTAL_FORMS" in post) or ("materiacomisionanio_set-TOTAL_FORMS" in post)
+
+        if has_formset:
+            formset = MCAFormSet(post, instance=self.object, prefix="mca")
+            if formset.is_valid():
+                formset.save()
+                messages.success(self.request, "Comisión guardada correctamente.")
+                return redirect(self.get_success_url())
+            # Si el formset tiene errores, re-render con errores
+            ctx = self.get_context_data(form=form)
+            ctx["formset"] = formset
+            return self.render_to_response(ctx)
+
+        # NO vino formset → redirigir normal
+        messages.success(self.request, "Comisión guardada correctamente.")
+        return redirect(self.get_success_url())
+
+
 class ComisionList(ListView):
     model = Comision
     template_name = "academics/comision_list_admin.html"  # para no chocar con tu comision.html público

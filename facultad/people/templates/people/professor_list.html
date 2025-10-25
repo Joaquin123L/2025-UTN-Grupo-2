@@ -47,12 +47,9 @@
               </svg>
               Editar
             </a>
-            <a href="{% url 'people:confirm_delete' u.pk %}" class="ap-btn ap-btn-danger" title="Eliminar">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6 7h12v2H6V7zm2 3h8l-1 9H9L8 10zm3-5h2l1 2H10l1-2z"/>
-              </svg>
-              Eliminar
-            </a>
+              {% if not u.materias_como_titular.exists and not u.materias_como_jtp.exists and not u.materias_como_ayudante.exists and not u.resenas_como_titular.exists and not u.resenas_como_jtp.exists %}
+              <a href="{% url 'people:confirm_delete' u.pk %}" class="ap-btn ap-btn--danger">Eliminar</a>
+              {% endif %}
           </td>
         </tr>
         {% empty %}
