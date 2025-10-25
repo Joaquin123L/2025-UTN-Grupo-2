@@ -4,17 +4,32 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import localtime
 from django.utils import timezone
-from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena
+from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena, Comision
+from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena, Comision
 from people.models import User
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from django.http import HttpResponseForbidden
 from academics.models import Department
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView
+from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
+from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
 from better_profanity import profanity
+from django.urls import reverse_lazy
+from academics.mixins import AdminRequiredMixin
+import json
+from django.utils.safestring import mark_safe
+from .forms import ComisionForm, MCAFormSet, DepartmentForm, MateriaForm
 from django.urls import reverse
 from django.http import Http404
+
+from django.urls import reverse_lazy
+from academics.mixins import AdminRequiredMixin
+import json
+from django.utils.safestring import mark_safe
+from .forms import ComisionForm, MCAFormSet, DepartmentForm, MateriaForm
+
+
 
 class DepartmentListView(LoginRequiredMixin, ListView):
     template_name = "academics/home.html"
@@ -380,6 +395,174 @@ def evaluar_mca(request, mca_id):
     messages.success(request, "¡Gracias! Tu evaluación fue registrada.")
     return redirect('people:perfil')
 
+# VISTAS ADMIN 
+
+class AdminPanelView(TemplateView):
+    """Panel con accesos a los ABM."""
+    template_name = "academics/admin_panel.html"
+
+
+# -------- Department (Departamento) --------
+class DepartmentList(ListView):
+    model = Department
+    template_name = "academics/department_list.html"
+    context_object_name = "departments"
+
+class DepartmentCreate(CreateView):
+    model = Department
+    form_class = DepartmentForm
+    template_name = "academics/department_form.html"
+    success_url = reverse_lazy("academics:dept_list")
+
+class DepartmentUpdate(UpdateView):
+    model = Department
+    form_class = DepartmentForm
+    template_name = "academics/department_form.html"
+    success_url = reverse_lazy("academics:dept_list")
+
+class DepartmentDelete(DeleteView):
+    model = Department
+    template_name = "academics/confirm_delete.html"
+    success_url = reverse_lazy("academics:dept_list")
+
+
+# -------- Materia --------
+class MateriaList(ListView):
+    model = Materia
+    template_name = "academics/materia_list.html"
+    context_object_name = "materias"
+
+class MateriaCreate(CreateView):
+    model = Materia
+    form_class = MateriaForm   
+    template_name = "academics/materia_form.html"
+    success_url = reverse_lazy("academics:materia_list")
+
+class MateriaUpdate(UpdateView):
+    model = Materia
+    form_class = MateriaForm
+    template_name = "academics/materia_form.html"
+    success_url = reverse_lazy("academics:materia_list")
+
+class MateriaDelete(DeleteView):
+    model = Materia
+    template_name = "academics/confirm_delete.html"
+    success_url = reverse_lazy("academics:materia_list")
+
+
+# -------- Materia–Comisión–Año (MCA) --------
+class MCAList(ListView):
+    model = MateriaComisionAnio
+    template_name = "academics/mca_list.html"
+    context_object_name = "mca_list"
+
+    def get_queryset(self):
+        return (MateriaComisionAnio.objects
+                .select_related("materia", "comision", "titular", "jtp")
+                .order_by("-anio", "materia__nombre", "comision__nombre"))
+
+class MCACreate(CreateView):
+    model = MateriaComisionAnio
+    fields = ["materia", "comision", "anio", "titular", "jtp", "ayudante"]
+    template_name = "academics/mca_form.html"
+    success_url = reverse_lazy("academics:mca_list")
+
+    # Limitar titulares/jtp/ayudantes a usuarios con rol PRO
+    def get_form(self, *args, **kwargs):
+        form = super().get_form(*args, **kwargs)
+        qs = User.objects.filter(rol=User.Role.PRO).order_by("last_name", "first_name")
+        for k in ("titular", "jtp", "ayudante"):
+            form.fields[k].queryset = qs
+        return form
+
+class MCAUpdate(UpdateView):
+    model = MateriaComisionAnio
+    fields = ["materia", "comision", "anio", "titular", "jtp", "ayudante"]
+    template_name = "academics/mca_form.html"
+    success_url = reverse_lazy("academics:mca_list")
+
+    def get_form(self, *args, **kwargs):
+        form = super().get_form(*args, **kwargs)
+        qs = User.objects.filter(rol=User.Role.PRO).order_by("last_name", "first_name")
+        for k in ("titular", "jtp", "ayudante"):
+            form.fields[k].queryset = qs
+        return form
+
+class MCADeleteView(DeleteView):
+    model = MateriaComisionAnio
+    template_name = "academics/confirm_delete.html"
+    success_url = reverse_lazy("academics:mca_list")
+MCADelete = MCADeleteView
+
+class ComisionBaseMixin:
+    model = Comision
+    form_class = ComisionForm
+    template_name = "academics/comision_form.html"
+    success_url = reverse_lazy("academics:comision_list")
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        # Detectar SI y SOLO SI vino el formset (management form)
+        def _has_formset_management(post):
+            return ("mca-TOTAL_FORMS" in post) or ("materiacomisionanio_set-TOTAL_FORMS" in post)
+
+        if self.request.method == "POST" and _has_formset_management(self.request.POST):
+            ctx["formset"] = MCAFormSet(self.request.POST, instance=self.object, prefix="mca")
+        else:
+            # Unbound: NO vino formset en el POST (o estás en GET)
+            ctx["formset"] = MCAFormSet(instance=self.object, prefix="mca")
+
+        # Para el filtro "Departamento → Materia" (solo UX)
+        departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
+        materias_by_depto = {
+            d.id: [{"id": m.id, "nombre": m.nombre} for m in d.materias.all().order_by("nombre")]
+            for d in departamentos
+        }
+        ctx["departamentos"] = departamentos
+        ctx["materias_by_depto_json"] = mark_safe(json.dumps(materias_by_depto))
+        return ctx
+
+    def form_valid(self, form):
+        # Guardar la comisión
+        self.object = form.save()
+
+        # ¿Realmente vino el formset en el POST? (solo si están las claves del management form)
+        post = self.request.POST
+        has_formset = ("mca-TOTAL_FORMS" in post) or ("materiacomisionanio_set-TOTAL_FORMS" in post)
+
+        if has_formset:
+            formset = MCAFormSet(post, instance=self.object, prefix="mca")
+            if formset.is_valid():
+                formset.save()
+                messages.success(self.request, "Comisión guardada correctamente.")
+                return redirect(self.get_success_url())
+            # Si el formset tiene errores, re-render con errores
+            ctx = self.get_context_data(form=form)
+            ctx["formset"] = formset
+            return self.render_to_response(ctx)
+
+        # NO vino formset → redirigir normal
+        messages.success(self.request, "Comisión guardada correctamente.")
+        return redirect(self.get_success_url())
+
+
+class ComisionList(ListView):
+    model = Comision
+    template_name = "academics/comision_list_admin.html"  # para no chocar con tu comision.html público
+    context_object_name = "comisiones"
+class ComisionCreateView(ComisionBaseMixin, CreateView):
+    def get_object(self, queryset=None):
+        return None
+
+class ComisionUpdateView(ComisionBaseMixin, UpdateView):
+    def get_queryset(self):
+        return Comision.objects.prefetch_related("materiacomisionanio_set__materia")
+
+class ComisionDelete(DeleteView):
+    model = Comision
+    template_name = "academics/confirm_delete.html"
+    success_url = reverse_lazy("academics:comision_list")
 
 @login_required
 def editar_resena_mca(request, mca_id):
@@ -488,3 +671,4 @@ def eliminar_resena_mca(request, mca_id):
 
     messages.success(request, "Se eliminó tu reseña. Podés volver a evaluarla cuando quieras.")
     return redirect("people:perfil") 
+

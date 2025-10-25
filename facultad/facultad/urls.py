@@ -20,7 +20,19 @@ from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView 
+from django.contrib.auth.decorators import login_required
 
+def post_login_redirect(request):
+    """Redirige según el rol del usuario después del login."""
+    u = request.user
+    if not u.is_authenticated:
+        return redirect("people:login")
+
+    # Si es admin (rol ADM o superuser), lo manda al panel de gestión
+    if getattr(u, "is_admin", False):
+        return redirect("academics:admin_panel")
+
+    return redirect("academics:home")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,6 +42,8 @@ urlpatterns = [
     path("accounts/login/", lambda request: redirect("people:login")),
     path("accounts/", include("allauth.urls")),
     path("navbar-test/", TemplateView.as_view(template_name="navbar_test.html"), name="navbar-test"),
+    path("post-login/", login_required(post_login_redirect), name="post_login"),
+
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

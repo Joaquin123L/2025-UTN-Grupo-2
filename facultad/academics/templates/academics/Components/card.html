@@ -6,13 +6,39 @@
 
     <a class="aa-card" href="{{ href }}" data-name="{{ title|lower }}"
     {% if new_tab %}target="_blank" rel="noopener"{% endif %}>
-    <div class="aa-thumb">
-        <img src="{{ image_url}}" alt="{{ title }}">
-        {% if badge %}<span class="aa-badge">{{ badge }}</span>{% endif %}
-    </div>
+        <div class="aa-thumb">
+    {# --- IMAGEN: FileField (.url) | SVG inline | URL string --- #}
+    {% if image_url %}
+      {% if image_url.url %}
+        <img src="{{ image_url.url }}" alt="{{ title }}"
+             onerror="this.closest('.aa-thumb').classList.add('aa-thumb-placeholder'); this.remove();">
+      {% elif image_url|slice:":4" == "<svg" %}
+        <div class="aa-thumb-svg">{{ image_url|safe }}</div>
+      {% else %}
+        <img src="{{ image_url }}" alt="{{ title }}"
+             onerror="this.closest('.aa-thumb').classList.add('aa-thumb-placeholder'); this.remove();">
+      {% endif %}
+    {% else %}
+      <div class="aa-thumb-placeholder"></div>
+    {% endif %}
 
-    <div class="aa-body">
-        {% if icon %}<div class="aa-icon">{{ icon|safe }}</div>{% endif %}
+    {% if badge %}<span class="aa-badge">{{ badge }}</span>{% endif %}
+  </div>
+
+  <div class="aa-body">
+    {% if icon %}
+      <div class="aa-icon">
+        {% if icon.url %}
+          <img class="aa-icon-img" src="{{ icon.url }}" alt=""
+               onerror="this.remove();">
+        {% elif icon|slice:":4" == "<svg" %}
+          {{ icon|safe }}
+        {% else %}
+          <img class="aa-icon-img" src="{{ icon }}" alt=""
+               onerror="this.remove();">
+        {% endif %}
+      </div>
+    {% endif %}
         <h3 class="aa-title">{{ title }}</h3>
         {% if titular or jtp %}
         <div class="aa-meta">

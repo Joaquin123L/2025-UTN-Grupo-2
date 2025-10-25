@@ -51,7 +51,7 @@ INSTALLED_APPS = [
     'academics',
     'rest_framework',
     'corsheaders',
-    "django.contrib.humanize", 
+    "django.contrib.humanize",
 ]
 
 MIDDLEWARE = [

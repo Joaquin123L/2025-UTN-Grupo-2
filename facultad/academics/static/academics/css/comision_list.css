@@ -1,0 +1,148 @@
+:root {
+    --ap-bg: #f5f7fb;
+    --ap-card: #fff;
+    --ap-border: #e9eef5;
+    --ap-muted: #6b7280;
+    --ap-primary: #0d6efd;
+    --ap-danger: #dc3545;
+    --ap-shadow: 0 6px 16px rgba(17, 24, 39, .06);
+}
+
+body {
+    background: var(--ap-bg);
+}
+
+.ap-list-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1rem 3rem;
+}
+
+.ap-card {
+    background: #fff;
+    border: 1px solid var(--ap-border);
+    border-radius: 16px;
+    box-shadow: var(--ap-shadow);
+    padding: 1.5rem 2rem;
+}
+
+.ap-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.ap-head h2 {
+    font-weight: 800;
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
+    margin: 0;
+    color: #111827;
+}
+
+/* Botones */
+.ap-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    border-radius: 12px;
+    padding: .55rem 1rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: .18s;
+}
+
+.ap-btn-sm {
+    padding: .4rem .75rem;
+    font-size: .875rem;
+}
+
+.ap-btn-primary {
+    background: var(--ap-primary);
+    color: #fff;
+}
+
+.ap-btn-primary:hover {
+    filter: brightness(.95);
+}
+
+.ap-btn-outline-secondary {
+    background: #fff;
+    border: 1px solid var(--ap-border);
+    color: #111827;
+}
+
+.ap-btn-outline-secondary:hover {
+    border-color: #cbd5e1;
+    box-shadow: var(--ap-shadow);
+}
+
+.ap-btn-outline-danger {
+    background: #fff;
+    border: 1px solid var(--ap-danger);
+    color: var(--ap-danger);
+}
+
+.ap-btn-outline-danger:hover {
+    background: rgba(220, 53, 69, .06);
+}
+
+/* Tabla */
+table.ap-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.ap-table th,
+table.ap-table td {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--ap-border);
+    vertical-align: middle;
+}
+
+table.ap-table th {
+    font-weight: 700;
+    color: #111827;
+}
+
+table.ap-table tbody tr:hover {
+    background: rgba(13, 110, 253, .03);
+}
+
+/* Chips Materia - Año */
+.ap-rel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem .6rem;
+}
+
+.ap-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .25rem .55rem;
+    border: 1px solid #e0e7ff;
+    background: #eef2ff;
+    color: #1e3a8a;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: .82rem;
+}
+
+.ap-chip small {
+    color: #334155;
+    font-weight: 700;
+}
+
+.ap-empty {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--ap-muted);
+}
+
+.ap-actions-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: .5rem;
+}

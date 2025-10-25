@@ -1,0 +1,148 @@
+:root {
+    --ap-bg: #f5f7fb;
+    --ap-card: #fff;
+    --ap-border: #e9eef5;
+    --ap-muted: #6b7280;
+    --ap-primary: #0d6efd;
+    --ap-danger: #dc3545;
+    --ap-shadow: 0 6px 16px rgba(17, 24, 39, .06);
+}
+
+body {
+    background: var(--ap-bg);
+}
+
+/* CONTENEDOR */
+.ap-wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 2rem 1rem 3rem;
+}
+
+/* TOOLBAR */
+.ap-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.ap-title {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(1.4rem, 2.2vw, 2rem);
+}
+
+/* BOTONES */
+.ap-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    border-radius: 12px;
+    padding: .55rem .9rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: .18s ease;
+    line-height: 1;
+}
+
+.ap-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.ap-btn-primary {
+    background: var(--ap-primary);
+    color: #fff;
+}
+
+.ap-btn-primary:hover {
+    filter: brightness(.95);
+}
+
+.ap-btn-light {
+    background: #fff;
+    border-color: var(--ap-border);
+    color: #111827;
+}
+
+.ap-btn-light:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 16px rgba(13, 110, 253, .08);
+}
+
+.ap-btn-danger {
+    color: var(--ap-danger);
+    border-color: rgba(220, 53, 69, .25);
+    background: #fff;
+}
+
+.ap-btn-danger:hover {
+    background: rgba(220, 53, 69, .06);
+}
+
+/* CARD + TABLA */
+.ap-card {
+    background: var(--ap-card);
+    border: 1px solid var(--ap-border);
+    border-radius: 16px;
+    box-shadow: var(--ap-shadow);
+    overflow: hidden;
+}
+
+.ap-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.ap-table thead th {
+    background: #fafbfd;
+    color: #111827;
+    font-weight: 700;
+    border-bottom: 1px solid var(--ap-border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: .9rem 1rem;
+}
+
+.ap-table tbody td {
+    padding: .95rem 1rem;
+    vertical-align: middle;
+}
+
+.ap-table tbody tr {
+    transition: background .15s ease;
+}
+
+.ap-table tbody tr:hover {
+    background: #f9fbff;
+}
+
+.ap-muted {
+    color: var(--ap-muted);
+}
+
+.ap-name {
+    font-weight: 600;
+}
+
+.ap-right {
+    text-align: right;
+    white-space: nowrap;
+}
+
+@media (max-width:640px) {
+    .ap-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ap-actions {
+        justify-content: space-between;
+    }
+}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Materias{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'academics/css/materia_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ap-wrap">
+    <div class="ap-toolbar">
+        <h2 class="ap-title">Materias</h2>
+        <div class="ap-actions">
+            <div class="ap-search">
+                <input id="q" type="text" placeholder="Buscar por nombre o departamento…" autocomplete="off">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path
+                        d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28h.79l4.5 4.5 1-1-4.5-4.5Zm-5 0A4.5 4.5 0 1 1 15 9.5 4.5 4.5 0 0 1 10.5 14Z" />
+                </svg>
+            </div>
+            <a href="{% url 'academics:materia_create' %}" class="ap-btn ap-btn-primary">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11 11V6h2v5h5v2h-5v5h-2v-5H6v-2z" />
+                </svg>
+                Nuevo
+            </a>
+        </div>
+    </div>
+
+    <div class="ap-card">
+        <table class="ap-table" id="matTable">
+            <thead>
+                <tr>
+                    <th style="width:35%">Nombre</th>
+                    <th style="width:30%">Departamento</th>
+                    <th>Descripción</th>
+                    <th style="width:1%"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for it in materias %}
+                <tr data-row>
+                    <td class="ap-name" data-text="{{ it.nombre|lower }}">{{ it.nombre }}</td>
+                    <td data-text="{{ it.departamento.nombre|lower }}">{{ it.departamento.nombre }}</td>
+                    <td class="ap-right">
+                        <a href="{% url 'academics:materia_update' it.pk %}" class="ap-btn ap-btn-light" title="Editar">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" />
+                            </svg>
+                            Editar
+                        </a>
+                        <a href="{% url 'academics:materia_delete' it.pk %}" class="ap-btn ap-btn-danger"
+                            title="Eliminar">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 7h12v2H6V7zm2 3h8l-1 9H9L8 10zm3-5h2l1 2H10l1-2z" />
+                            </svg>
+                            Eliminar
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="ap-muted" style="text-align:center; padding:1.1rem;">Sin registros.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const q = document.getElementById('q');
+        if (!q) return;
+        const rows = Array.from(document.querySelectorAll('#matTable tbody [data-row]'));
+        q.addEventListener('input', e => {
+            const term = e.target.value.trim().toLowerCase();
+            rows.forEach(r => {
+                const cells = Array.from(r.querySelectorAll('[data-text]')).map(td => (td.dataset.text || td.textContent || '').toLowerCase());
+                r.style.display = cells.some(t => t.includes(term)) ? '' : 'none';
+            });
+        });
+    })();
+</script>
+{% endblock %}

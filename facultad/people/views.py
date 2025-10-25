@@ -4,7 +4,7 @@ from django.contrib.auth import login, authenticate
 from django.urls import reverse_lazy
 from .forms import SignupForm, UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q, Avg, Count
+from django.db.models import Q, Avg, Count, Exists, OuterRef, Q
 from people.models import User
 from academics.models import MateriaComisionAnio, ResenaItem, Resena, Nota, Materia
 from django.contrib.auth import get_user_model
@@ -23,6 +23,11 @@ from django.views import View
 from django.urls import NoReverseMatch 
 from allauth.account.views import SignupView
 from django.contrib.auth import logout
+from django.urls import reverse_lazy
+from django.views.generic import  CreateView, UpdateView, DeleteView
+from .models import User as UserModel
+from .forms import ProfessorCreateForm, ProfessorUpdateForm
+
 
 User = get_user_model()
 
@@ -51,9 +56,12 @@ def login_view(request):
             except User.DoesNotExist:
                 user = None
 
-        if user is not None:
+        if user is not None and user.rol in [User.Role.ALUMNO]:
             login(request, user)
             return redirect("academics:home")
+        elif user is not None and user.rol in [User.Role.ADMIN]:
+            login(request, user)
+            return redirect("academics:admin_panel")
         else:
             messages.error(request, "Email o contraseña incorrectos.")
 
@@ -438,3 +446,63 @@ class SubirAvatarView(LoginRequiredMixin, View):
 
         messages.success(request, "¡Tu foto de perfil fue actualizada!")
         return self._go_back() 
+
+
+def professor_list(request):
+    profesores = (
+        UserModel.objects
+        .filter(rol=UserModel.Role.PROFESOR)
+        .order_by("last_name", "first_name")
+    )
+    return render(request, "people/professor_list.html", {"object_list": profesores})
+
+
+def professor_form(request, pk=None):
+    instance = None
+    if pk:
+        instance = get_object_or_404(UserModel, pk=pk, rol=UserModel.Role.PROFESOR)
+
+    FormCls = ProfessorUpdateForm if instance else ProfessorCreateForm
+
+    if request.method == "POST":
+        form = FormCls(request.POST, request.FILES, instance=instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profesor guardado correctamente.")
+            return redirect("people:professor_list")
+        # si no es válido, sigue al render con errores
+    else:
+        form = FormCls(instance=instance)
+
+    return render(
+        request,
+        "people/professor_form.html",
+        {"form": form, "professor": instance},
+    )
+class ProfessorDeleteView(LoginRequiredMixin, DeleteView):
+    model = UserModel
+    template_name = "people/professor_confirm_delete.html"
+    success_url = reverse_lazy("people:professor_list")
+    login_url = "people:login"
+
+    def get_queryset(self):
+        # Que la URL exista para cualquier profesor
+        return UserModel.objects.filter(rol=UserModel.Role.PROFESOR)
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+
+        # Bloqueá si tiene vínculos
+        has_links = (
+            self.object.materias_como_titular.exists()
+            or self.object.materias_como_jtp.exists()
+            or self.object.materias_como_ayudante.exists()
+            or self.object.resenas_como_titular.exists()
+            or self.object.resenas_como_jtp.exists()
+        )
+
+        if has_links:
+            messages.error(request, "No se puede eliminar: el profesor tiene materias o reseñas asociadas.")
+            return redirect(self.success_url)
+
+        return super().delete(request, *args, **kwargs)

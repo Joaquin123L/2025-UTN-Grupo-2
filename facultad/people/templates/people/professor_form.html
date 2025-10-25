@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if professor %}Editar{% else %}Nuevo{% endif %} Profesor{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'people/css/professor_form.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ap-form-wrap">
+  <h2 class="ap-title">{% if professor %}Editar{% else %}Nuevo{% endif %} Profesor</h2>
+
+  <div class="ap-card">
+    <form method="post" enctype="multipart/form-data" id="profForm" novalidate>
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+
+      {% for field in form %}
+        {% if field.name != 'password1' and field.name != 'password2' %}
+          <div class="ap-field">
+            <label class="ap-label" for="{{ field.id_for_label }}">
+              {{ field.label }} {% if field.field.required %}<span class="ap-required">*</span>{% endif %}
+            </label>
+
+            {{ field }}
+
+            {% if field.help_text %}<div class="ap-help">{{ field.help_text|safe }}</div>{% endif %}
+            {% if field.errors %}<div class="ap-errors">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <div class="ap-actions">
+        <a href="{% url 'people:professor_list' %}" class="ap-btn ap-btn-light">Cancelar</a>
+        <button class="ap-btn ap-btn-primary" type="submit" id="btnSubmit">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

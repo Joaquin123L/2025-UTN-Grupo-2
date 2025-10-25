@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Profesores{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'people/css/professor_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="ap-wrap">
+  <!-- Toolbar -->
+  <div class="ap-toolbar">
+    <h2 class="ap-title">Profesores</h2>
+    <div class="ap-actions">
+      <a href="{% url 'people:professor_form' %}" class="ap-btn ap-btn-primary">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M11 11V6h2v5h5v2h-5v5h-2v-5H6v-2z"/>
+        </svg>
+        Nuevo
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="ap-card">
+    <table class="ap-table" id="profTable">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Nombre</th>
+          <th>Email</th>
+          <th>Legajo</th>
+          <th class="ap-right">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in object_list %}
+        <tr data-row>
+          <td class="ap-name">{{ u.username }}</td>
+          <td>{{ u.last_name }}, {{ u.first_name }}</td>
+          <td class="ap-muted">{{ u.email }}</td>
+          <td>{{ u.legajo|default:"—" }}</td>
+          <td class="ap-right">
+            <a href="{% url 'people:professor_form' u.pk %}" class="ap-btn ap-btn-light" title="Editar">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z"/>
+              </svg>
+              Editar
+            </a>
+              {% if not u.materias_como_titular.exists and not u.materias_como_jtp.exists and not u.materias_como_ayudante.exists and not u.resenas_como_titular.exists and not u.resenas_como_jtp.exists %}
+              <a href="{% url 'people:confirm_delete' u.pk %}" class="ap-btn ap-btn--danger">Eliminar</a>
+              {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="ap-muted" style="text-align:center; padding:1.1rem;">
+            Sin profesores registrados.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
