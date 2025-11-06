@@ -111,6 +111,17 @@ body {
     margin-top: 1rem;
 }
 
+.ap-btn-danger {
+  background: #fff;
+  color: var(--ap-danger);
+  border-color: rgba(220, 53, 69, .35);
+}
+.ap-btn-danger:hover {
+  background: rgba(220, 53, 69, .06);
+  border-color: var(--ap-danger);
+  box-shadow: 0 6px 16px rgba(220, 53, 69, .08);
+}
+
 .ap-btn {
     display: inline-flex;
     align-items: center;

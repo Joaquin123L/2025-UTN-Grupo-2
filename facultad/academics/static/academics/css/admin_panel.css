@@ -7,6 +7,7 @@
     --ap-mat: #f59e0b;
     --ap-com: #20c997;
     --ap-prof: #bf42c1;
+    --ap-cens: #f00a0a;
 }
 
 body {
@@ -105,4 +106,7 @@ body {
 
 .ap-prof {
     --ap-accent: var(--ap-prof);
+}
+.ap-cens {
+    --ap-accent: var(--ap-cens);
 }
