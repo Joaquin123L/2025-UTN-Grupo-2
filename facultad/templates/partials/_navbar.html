@@ -2,33 +2,36 @@
 
 <header class="navbar">
   <div class="navbar__inner container-narrow">
-    {% if request.user.is_authenticated and request.user.rol == "ADM" %}
-      <a class="navbar__brand" href="{% url 'academics:admin_panel' %}">
-        <img class="navbar__logo" src="{% static 'img/logo.png' %}" alt="Pasa la Data UTN">
-      </a>
-    {% else %}
-      <a class="navbar__brand" href="{% url 'academics:home' %}">
-        <img class="navbar__logo" src="{% static 'img/logo.png' %}" alt="Pasa la Data UTN">
-      </a>
-    {% endif %}
+    <a class="navbar__brand" 
+       href="{% if request.user.is_authenticated and request.user.rol == 'ADM' %}
+                {% url 'academics:admin_panel' %}
+              {% else %}
+                {% url 'academics:home' %}
+              {% endif %}">
+      <img class="navbar__logo" src="{% static 'img/logo.png' %}" alt="Pasa la Data UTN">
+    </a>
 
-    {% if request.user.is_authenticated and request.user.rol != "ADM" %}
-      <div class="navbar__right">
-        <a class="nav-avatar" href="{% url 'people:perfil' %}" title="Mi perfil">
-          {% if request.user.imagen_perfil %}
-            <img src="{{ request.user.imagen_perfil.url }}" alt="Foto de perfil">
-          {% else %}
-            <span class="nav-avatar__fallback">
-              {{ request.user.get_short_name|default:request.user.username|slice:":1"|upper }}
-            </span>
-          {% endif %}
+    <div class="navbar__right">
+      {% if request.user.is_authenticated %}
+        {% if request.user.rol != "ADM" %}
+          <a class="nav-avatar" href="{% url 'people:perfil' %}" title="Mi perfil">
+            {% if request.user.imagen_perfil %}
+              <img src="{{ request.user.imagen_perfil.url }}" alt="Foto de perfil">
+            {% else %}
+              <span class="nav-avatar__fallback">
+                {{ request.user.get_short_name|default:request.user.username|slice:":1"|upper }}
+              </span>
+            {% endif %}
+          </a>
+        {% endif %}
+        <a class="nav-avatar" href="{% url 'people:logout' %}" title="Cerrar sesión">
+          <img src="{% static 'img/logout.svg' %}" alt="Cerrar sesión" class="logout-icon">
         </a>
-      </div>
-    {% elif not request.user.is_authenticated and request.user.rol == "ADM" %}
-      <div class="navbar__right">
+
+      {% else %}
         <a class="btn btn-light btn-sm" href="{% url 'people:register' %}">Registrate</a>
         <a class="btn btn-light btn-sm" href="{% url 'people:login' %}">Iniciar sesión</a>
-      </div>
-    {% endif %}
+      {% endif %}
+    </div>
   </div>
 </header>

@@ -71,6 +71,10 @@ def login_view(request):
 def olvideClave(request):
     return render(request, "people/olvide-clave.html")
 
+def logout_view(request):
+    logout(request)
+    return redirect("people:login")
+
 
 @csrf_exempt
 def altaProfesor(request):
