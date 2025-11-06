@@ -71,6 +71,10 @@ def login_view(request):
 def olvideClave(request):
     return render(request, "people/olvide-clave.html")
 
+def logout_view(request):
+    logout(request)
+    return redirect("people:login")
+
 
 @csrf_exempt
 def altaProfesor(request):
@@ -273,6 +277,14 @@ def _pick_carrera_for_user(plan_rows: list[dict], user) -> tuple[str | None, lis
 
     return (chosen, [r for r in plan_rows if r["carrera"] == chosen])
 
+def censor_comment(text):
+
+    if not text:
+        return ""
+    
+    text = text.strip()
+    return profanity.censor(text)
+
 class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
     template_name = "people/perfil_usuario.html"
     login_url = "people:login"
@@ -359,6 +371,7 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
 
         comentarios_todos = []
         for it in base_qs:
+            comentario_censurado = censor_comment(it.comentario or "")
             mca = it.resena.mca
             if it.target_type == ResenaItem.Target.MATERIA:
                 comentarios_todos.append({
@@ -368,8 +381,8 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "subtitle": f"Año {mca.anio}",
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
-                    "comentario": profanity.censor((it.comentario or "").strip()),
-                    "mca_id": mca.id,                           # 👈 clave
+                    "comentario": comentario_censurado,
+                    "mca_id": mca.id,
                 })
             elif it.target_type == ResenaItem.Target.COMISION:
                 com = mca.comision.nombre if mca.comision else "—"
@@ -380,8 +393,8 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "subtitle": f"Año {mca.anio}",
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
-                    "comentario": profanity.censor((it.comentario or "").strip()),
-                    "mca_id": mca.id,                           # 👈 clave
+                    "comentario": comentario_censurado,
+                    "mca_id": mca.id,
                 })
             elif it.target_type in (ResenaItem.Target.TITULAR, ResenaItem.Target.JTP):
                 rol = "Titular" if it.target_type == ResenaItem.Target.TITULAR else "JTP"
@@ -395,8 +408,8 @@ class PerfilUsuarioView(LoginRequiredMixin, TemplateView):
                     "subtitle": f"{mca.materia.nombre} — {com} · Año {mca.anio}",
                     "fecha": it.resena.created_at,
                     "puntuacion": it.puntuacion,
-                    "comentario": profanity.censor((it.comentario or "").strip()),
-                    "mca_id": mca.id,                           # 👈 clave
+                    "comentario": comentario_censurado,
+                    "mca_id": mca.id,
                 })
 
         ctx.update({
