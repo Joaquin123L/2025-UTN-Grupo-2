@@ -24,6 +24,10 @@ urlpatterns = [
     path("comisiones/<int:pk>/eliminar/", views.ComisionDelete.as_view(), name="comision_delete"),
     path("mca/<int:mca_id>/resena/editar/", views.editar_resena_mca, name="editar_resena_mca"),
     path("mca/<int:mca_id>/resena/eliminar/", views.eliminar_resena_mca, name="eliminar_resena_mca"),
+    path('admin/censored-words/', views.CensoredWordListView.as_view(), name='censoredword_list'),
+    path('admin/censored-words/new/', views.CensoredWordCreateView.as_view(), name='censoredword_create'),
+    path('admin/censored-words/edit/<int:pk>/', views.CensoredWordUpdateView.as_view(), name='censoredword_update'),
+    path('admin/censored-words/delete/<int:pk>/', views.CensoredWordDeleteView.as_view(), name='censoredword_delete'),
 ]
 
 
