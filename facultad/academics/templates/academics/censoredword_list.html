@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Palabras censuradas{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'academics/css/censored_list.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="ap-list-wrap">
+  <div class="ap-card">
+    <div class="ap-head">
+      <h2>Palabras censuradas</h2>
+      <button class="ap-btn ap-btn-primary" onclick="openCreateModal()">+ Nueva</button>
+    </div>
+
+    <table class="ap-table">
+      <thead>
+        <tr>
+          <th>Palabra</th>
+          <th style="width:190px" class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="words-table-body">
+        {% for it in object_list %}
+        <tr>
+          <td>{{ it.palabra }}</td>
+          <td class="text-end">
+            <div class="ap-actions-row">
+              <button class="ap-btn ap-btn-sm ap-btn-outline-secondary"
+                      data-id="{{ it.pk }}" data-word="{{ it.palabra|escapejs|escape }}"
+                      onclick="openEditModal(this.dataset.id, this.dataset.word)">Editar</button>
+              <button class="ap-btn ap-btn-sm ap-btn-outline-danger"
+                      data-id="{{ it.pk }}" data-word="{{ it.palabra|escapejs|escape }}"
+                      onclick="openDeleteModal(this.dataset.id, this.dataset.word)">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr id="empty-row"><td colspan="2" class="ap-empty">Sin registros.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if is_paginated %}
+      <nav class="ap-pagination">
+        <ul class="pagination">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+            </li>
+          {% endif %}
+          <li class="page-item active">
+            <span class="page-link">
+              {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+          </li>
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    {% endif %}
+  </div>
+</section>
+
+<div id="form-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-title">Nueva palabra</h3>
+      <button class="modal-close" onclick="closeModal('form-modal')">&times;</button>
+    </div>
+    <form id="word-form" onsubmit="submitForm(event)">
+      {% csrf_token %}
+      <input type="hidden" id="word-id" name="word_id">
+      <div class="form-group">
+        <label for="palabra">Palabra:</label>
+        <input type="text" id="palabra" name="palabra" class="form-control" required>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="ap-btn ap-btn-outline-secondary" onclick="closeModal('form-modal')">Cancelar</button>
+        <button type="submit" class="ap-btn ap-btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="delete-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Confirmar eliminación</h3>
+      <button class="modal-close" onclick="closeModal('delete-modal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Está seguro de eliminar la palabra "<strong id="delete-word-name"></strong>"?</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="ap-btn ap-btn-outline-secondary" onclick="closeModal('delete-modal')">Cancelar</button>
+      <button type="button" class="ap-btn ap-btn-danger" onclick="confirmDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentDeleteId = null;
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function openCreateModal() {
+    document.getElementById('modal-title').textContent = 'Nueva palabra';
+    document.getElementById('word-form').reset();
+    document.getElementById('word-id').value = '';
+    document.getElementById('form-modal').classList.add('active');
+  }
+
+  function openEditModal(id, palabra) {
+    document.getElementById('modal-title').textContent = 'Editar palabra';
+    document.getElementById('word-id').value = id;
+    document.getElementById('palabra').value = palabra;
+    document.getElementById('form-modal').classList.add('active');
+  }
+
+  function openDeleteModal(id, palabra) {
+    currentDeleteId = id;
+    document.getElementById('delete-word-name').textContent = palabra;
+    document.getElementById('delete-modal').classList.add('active');
+  }
+
+  function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+  }
+
+  async function submitForm(event) {
+    event.preventDefault();
+    const wordId = document.getElementById('word-id').value;
+    const palabra = document.getElementById('palabra').value;
+    const url = wordId ? 
+      "{% url 'academics:censoredword_update' 0 %}".replace('0', wordId) : 
+      "{% url 'academics:censoredword_create' %}";
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `palabra=${encodeURIComponent(palabra)}`
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert('Error al guardar la palabra');
+      }
+    } catch (error) {
+      alert('Error de conexión');
+    }
+  }
+
+  async function confirmDelete() {
+    if (!currentDeleteId) return;
+
+    const url = "{% url 'academics:censoredword_delete' 0 %}".replace('0', currentDeleteId);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': getCookie('csrftoken'),
+        }
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        alert('Error al eliminar la palabra');
+      }
+    } catch (error) {
+      alert('Error de conexión');
+    }
+  }
+
+  document.querySelectorAll('.modal-overlay').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal(this.id);
+      }
+    });
+  });
+</script>
+{% endblock %}

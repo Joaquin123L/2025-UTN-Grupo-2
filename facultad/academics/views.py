@@ -4,12 +4,13 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import localtime
 from django.utils import timezone
-from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena, Comision
+from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena, Comision, CensoredWord
+from .admin import CensoredWordAdmin
 from people.models import User
 from django.contrib import messages
 from django.db import transaction, IntegrityError
 from django.db.models.deletion import ProtectedError
-from django.http import HttpResponseForbidden, Http404
+from django.http import HttpResponseForbidden, JsonResponse, Http404
 from academics.models import Department
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
@@ -19,6 +20,7 @@ import json
 from django.urls import reverse, reverse_lazy
 import json
 from django.utils.safestring import mark_safe
+
 
 
 class DepartmentListView(LoginRequiredMixin, ListView):
@@ -918,4 +920,43 @@ def eliminar_resena_mca(request, mca_id):
 
     messages.success(request, "Se eliminó tu reseña. Podés volver a evaluarla cuando quieras.")
     return redirect("people:perfil") 
+
+
+#CRUD DE CENSORED WORDS
+class CensoredWordListView(ListView):
+    model = CensoredWord
+    template_name = 'academics/censoredword_list.html'
+
+class CensoredWordCreateView(CreateView):
+    model = CensoredWord
+    fields = ['palabra']
+    success_url = reverse_lazy('academics:censoredword_list')
+    
+    def form_valid(self, form):
+        form.save()
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
+        return super().form_valid(form)
+
+class CensoredWordUpdateView(UpdateView):
+    model = CensoredWord
+    fields = ['palabra']
+    success_url = reverse_lazy('academics:censoredword_list')
+    
+    def form_valid(self, form):
+        form.save()
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
+        return super().form_valid(form)
+
+class CensoredWordDeleteView(DeleteView):
+    model = CensoredWord
+    success_url = reverse_lazy('academics:censoredword_list')
+    
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
+        return JsonResponse({'success': True})
 

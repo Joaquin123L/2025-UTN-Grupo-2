@@ -239,3 +239,10 @@ class Nota(models.Model):
         if self.estado == self.Estado.APROBADA and self.nota is None:
             # opcional: exigir nota cuando está aprobada
             pass
+
+
+class CensoredWord(models.Model):
+    palabra = models.CharField(max_length=50, unique=True)
+    
+    def __str__(self):
+        return self.palabra
