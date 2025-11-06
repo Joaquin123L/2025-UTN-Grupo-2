@@ -1,4 +1,5 @@
 :root {
+    /* Variables de color y estilo */
     --ap-bg: #f5f7fb;
     --ap-card: #fff;
     --ap-border: #e9eef5;
@@ -12,15 +13,32 @@ body {
     background: var(--ap-bg);
 }
 
-.ap-delete-wrap {
+.ap-title {
+    /* Ajuste para separar el título del encabezado superior */
+    font-weight: 800;
+    font-size: clamp(1.4rem, 2vw, 1.8rem);
+    color: #111827;
+    margin: 2rem 0 1.5rem 0;
+    /* 💥 Espaciado a la izquierda para que no quede pegado */
+    padding-left: 2rem;
+}
+
+/* 🖼️ CLASE CLAVE: Envoltorio para centrar la tarjeta */
+.ap-card-center-wrapper {
+    /* Centrado horizontal y vertical */
     display: flex;
-    align-items: center;
     justify-content: center;
-    min-height: 70vh;
-    padding: 2rem 1rem;
+    align-items: center; 
+    /* 💥 AJUSTADO: Reducido para subir la tarjeta */
+    min-height: calc(100vh - 200px);
+    padding: 1rem;
+    box-sizing: border-box;
+    /* 💥 Margen negativo para subir más */
+    margin-top: -3rem;
 }
 
 .ap-card {
+    /* Estilos de la tarjeta blanca */
     background: var(--ap-card);
     border: 1px solid var(--ap-border);
     border-radius: 16px;
@@ -31,54 +49,71 @@ body {
     text-align: center;
 }
 
-.ap-title {
-    font-weight: 800;
-    font-size: clamp(1.4rem, 2vw, 1.8rem);
-    color: #111827;
-    margin-bottom: 1rem;
-}
-
 .ap-text {
+    /* Estilos del texto de confirmación */
     color: #374151;
     font-size: 1.05rem;
     margin-bottom: 2rem;
 }
 
 .ap-actions {
+    /* Contenedor de los botones */
     display: flex;
     justify-content: center;
+    align-items: stretch;
     gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.ap-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    padding: .6rem 1.2rem;
-    font-weight: 600;
-    border: 1px solid transparent;
-    transition: .18s ease;
-    text-decoration: none;
-    cursor: pointer;
+/* 💥 NUEVO: Estilos más específicos y forzados para los botones */
+.ap-card .ap-actions .ap-btn,
+.ap-card .ap-actions button.ap-btn,
+.ap-card .ap-actions a.ap-btn {
+    /* Reset de estilos que puedan venir de otro lugar */
+    all: unset;
+    /* Estilos base de los botones */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    padding: .75rem 1.5rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    border: 1px solid transparent !important;
+    transition: all .18s ease !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    box-sizing: border-box !important;
+    /* 💥 Ancho fijo para que sean exactamente iguales */
+    min-width: 130px !important;
+    text-align: center !important;
+    line-height: 1.5 !important;
 }
 
-.ap-btn-light {
-    background: #fff;
-    border: 1px solid var(--ap-border);
-    color: #111827;
+.ap-card .ap-actions .ap-btn-light,
+.ap-card .ap-actions a.ap-btn-light {
+    /* Estilos del botón "Cancelar" */
+    background: #fff !important;
+    border: 1px solid var(--ap-border) !important;
+    color: #111827 !important;
 }
 
-.ap-btn-light:hover {
-    border-color: #cbd5e1;
-    box-shadow: var(--ap-shadow);
+.ap-card .ap-actions .ap-btn-light:hover {
+    /* Efecto hover */
+    border-color: #cbd5e1 !important;
+    box-shadow: var(--ap-shadow) !important;
 }
 
-.ap-btn-danger {
-    background: var(--ap-danger);
-    color: #fff;
+.ap-card .ap-actions .ap-btn-danger,
+.ap-card .ap-actions button.ap-btn-danger {
+    /* Estilos del botón "Sí, eliminar" */
+    background: var(--ap-danger) !important;
+    color: #fff !important;
+    border: 1px solid var(--ap-danger) !important;
 }
 
-.ap-btn-danger:hover {
-    filter: brightness(.95);
+.ap-card .ap-actions .ap-btn-danger:hover {
+    /* Efecto hover */
+    filter: brightness(.92) !important;
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
 }

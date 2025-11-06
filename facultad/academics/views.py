@@ -1,34 +1,24 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Max, Value, OuterRef, Subquery, IntegerField, FloatField
+from django.db.models import Avg, Count, Max, Value, OuterRef, Subquery, IntegerField, FloatField, Exists, Q
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import localtime
 from django.utils import timezone
 from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena, Comision
-from academics.models import MateriaComisionAnio, ResenaItem, Materia, Department, Nota, Resena, Comision
 from people.models import User
 from django.contrib import messages
 from django.db import transaction, IntegrityError
-from django.http import HttpResponseForbidden
+from django.db.models.deletion import ProtectedError
+from django.http import HttpResponseForbidden, Http404
 from academics.models import Department
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
-from django.views.generic import TemplateView, ListView, CreateView, UpdateView, DeleteView
 from better_profanity import profanity
-from django.urls import reverse_lazy
 from academics.mixins import AdminRequiredMixin
 import json
-from django.utils.safestring import mark_safe
-from .forms import ComisionForm, MCAFormSet, DepartmentForm, MateriaForm
-from django.urls import reverse
-from django.http import Http404
-
-from django.urls import reverse_lazy
-from academics.mixins import AdminRequiredMixin
+from django.urls import reverse, reverse_lazy
 import json
 from django.utils.safestring import mark_safe
-from .forms import ComisionForm, MCAFormSet, DepartmentForm, MateriaForm
-
 
 
 class DepartmentListView(LoginRequiredMixin, ListView):
@@ -396,174 +386,431 @@ def evaluar_mca(request, mca_id):
     return redirect('people:perfil')
 
 # VISTAS ADMIN 
-
 class AdminPanelView(TemplateView):
     """Panel con accesos a los ABM."""
     template_name = "academics/admin_panel.html"
 
+# -------- Departamento ------
+@login_required
+def dept_list(request):
+    q = (request.GET.get("q") or "").strip()
+    qs = Department.objects.all().order_by("nombre")
+    if q:
+        qs = qs.filter(nombre__icontains=q)
 
-# -------- Department (Departamento) --------
-class DepartmentList(ListView):
-    model = Department
-    template_name = "academics/department_list.html"
-    context_object_name = "departments"
+    return render(request, "academics/department_list.html", {
+        "departments": qs,
+        "q": q,
+        "create_url": "academics:dept_create",
+        "update_name": "academics:dept_update",
+        "delete_name": "academics:dept_delete",
+    })
 
-class DepartmentCreate(CreateView):
-    model = Department
-    form_class = DepartmentForm
-    template_name = "academics/department_form.html"
-    success_url = reverse_lazy("academics:dept_list")
+@login_required
+def dept_create(request):
+    if request.method == "GET":
+        return render(request, "academics/department_form.html")
 
-class DepartmentUpdate(UpdateView):
-    model = Department
-    form_class = DepartmentForm
-    template_name = "academics/department_form.html"
-    success_url = reverse_lazy("academics:dept_list")
+    nombre = (request.POST.get("nombre") or "").strip()
+    icono = (request.POST.get("icono") or "").strip()
+    imagen = request.FILES.get("imagen")  # opcional
 
-class DepartmentDelete(DeleteView):
-    model = Department
-    template_name = "academics/confirm_delete.html"
-    success_url = reverse_lazy("academics:dept_list")
+    if not nombre:
+        messages.error(request, "El nombre es obligatorio.")
+        return render(request, "academics/department_form.html", {"nombre": nombre, "icono": icono})
 
+    try:
+        d = Department(nombre=nombre, icono=icono)
+        if imagen:
+            d.imagen = imagen
+        d.save()
+        messages.success(request, "Se creó correctamente.")
+        return redirect("academics:dept_list")
+    except IntegrityError:
+        messages.error(request, "Ya existe un departamento con ese nombre.")
+        return render(request, "academics/department_form.html", {"nombre": nombre, "icono": icono})
+
+@login_required
+def dept_update(request, pk: int):
+    d = get_object_or_404(Department, pk=pk)
+
+    if request.method == "GET":
+        return render(request, "academics/department_form.html", {
+            "obj": d, "nombre": d.nombre, "icono": d.icono
+        })
+
+    nombre = (request.POST.get("nombre") or "").strip()
+    icono = (request.POST.get("icono") or "").strip()
+    imagen = request.FILES.get("imagen")
+
+    if not nombre:
+        messages.error(request, "El nombre es obligatorio.")
+        return render(request, "academics/department_form.html", {"obj": d, "nombre": nombre, "icono": icono})
+
+    d.nombre = nombre
+    d.icono = icono
+    if imagen:
+        d.imagen = imagen
+
+    try:
+        d.save()
+        messages.success(request, "Se actualizó correctamente.")
+        return redirect("academics:dept_list")
+    except IntegrityError:
+        messages.error(request, "Ya existe un departamento con ese nombre.")
+        return render(request, "academics/department_form.html", {"obj": d, "nombre": nombre, "icono": icono})
+
+@login_required
+def dept_delete(request, pk: int):
+    d = get_object_or_404(Department, pk=pk)
+    if request.method == "GET":
+        return render(request, "academics/confirm_delete.html", {
+            "object": d,
+            "cancel_url": reverse("academics:dept_list"),
+            "title": "Eliminar Departamento"
+        })
+
+    try:
+        d.delete()
+        messages.success(request, "Se eliminó correctamente.")
+    except (ProtectedError, IntegrityError):
+        messages.error(request, "No se pudo eliminar: hay materias asignadas a este departamento.")
+    return redirect("academics:dept_list")
 
 # -------- Materia --------
-class MateriaList(ListView):
-    model = Materia
-    template_name = "academics/materia_list.html"
-    context_object_name = "materias"
+@login_required
+def materia_list(request):
+    q = (request.GET.get("q") or "").strip()
+    dept_id = request.GET.get("department")
 
-class MateriaCreate(CreateView):
-    model = Materia
-    form_class = MateriaForm   
-    template_name = "academics/materia_form.html"
-    success_url = reverse_lazy("academics:materia_list")
+    qs = (Materia.objects
+            .select_related("departamento")
+            .filter(eliminado=False)
+            .order_by("nombre"))
 
-class MateriaUpdate(UpdateView):
-    model = Materia
-    form_class = MateriaForm
-    template_name = "academics/materia_form.html"
-    success_url = reverse_lazy("academics:materia_list")
+    if q:
+        qs = qs.filter(Q(nombre__icontains=q) | Q(departamento__nombre__icontains=q))
 
-class MateriaDelete(DeleteView):
-    model = Materia
-    template_name = "academics/confirm_delete.html"
-    success_url = reverse_lazy("academics:materia_list")
+    if dept_id:
+        qs = qs.filter(departamento_id=dept_id)
 
-
-# -------- Materia–Comisión–Año (MCA) --------
-class MCAList(ListView):
-    model = MateriaComisionAnio
-    template_name = "academics/mca_list.html"
-    context_object_name = "mca_list"
-
-    def get_queryset(self):
-        return (MateriaComisionAnio.objects
-                .select_related("materia", "comision", "titular", "jtp")
-                .order_by("-anio", "materia__nombre", "comision__nombre"))
-
-class MCACreate(CreateView):
-    model = MateriaComisionAnio
-    fields = ["materia", "comision", "anio", "titular", "jtp", "ayudante"]
-    template_name = "academics/mca_form.html"
-    success_url = reverse_lazy("academics:mca_list")
-
-    # Limitar titulares/jtp/ayudantes a usuarios con rol PRO
-    def get_form(self, *args, **kwargs):
-        form = super().get_form(*args, **kwargs)
-        qs = User.objects.filter(rol=User.Role.PRO).order_by("last_name", "first_name")
-        for k in ("titular", "jtp", "ayudante"):
-            form.fields[k].queryset = qs
-        return form
-
-class MCAUpdate(UpdateView):
-    model = MateriaComisionAnio
-    fields = ["materia", "comision", "anio", "titular", "jtp", "ayudante"]
-    template_name = "academics/mca_form.html"
-    success_url = reverse_lazy("academics:mca_list")
-
-    def get_form(self, *args, **kwargs):
-        form = super().get_form(*args, **kwargs)
-        qs = User.objects.filter(rol=User.Role.PRO).order_by("last_name", "first_name")
-        for k in ("titular", "jtp", "ayudante"):
-            form.fields[k].queryset = qs
-        return form
-
-class MCADeleteView(DeleteView):
-    model = MateriaComisionAnio
-    template_name = "academics/confirm_delete.html"
-    success_url = reverse_lazy("academics:mca_list")
-MCADelete = MCADeleteView
-
-class ComisionBaseMixin:
-    model = Comision
-    form_class = ComisionForm
-    template_name = "academics/comision_form.html"
-    success_url = reverse_lazy("academics:comision_list")
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-
-        # Detectar SI y SOLO SI vino el formset (management form)
-        def _has_formset_management(post):
-            return ("mca-TOTAL_FORMS" in post) or ("materiacomisionanio_set-TOTAL_FORMS" in post)
-
-        if self.request.method == "POST" and _has_formset_management(self.request.POST):
-            ctx["formset"] = MCAFormSet(self.request.POST, instance=self.object, prefix="mca")
-        else:
-            # Unbound: NO vino formset en el POST (o estás en GET)
-            ctx["formset"] = MCAFormSet(instance=self.object, prefix="mca")
-
-        # Para el filtro "Departamento → Materia" (solo UX)
-        departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
-        materias_by_depto = {
-            d.id: [{"id": m.id, "nombre": m.nombre} for m in d.materias.all().order_by("nombre")]
-            for d in departamentos
-        }
-        ctx["departamentos"] = departamentos
-        ctx["materias_by_depto_json"] = mark_safe(json.dumps(materias_by_depto))
-        return ctx
-
-    def form_valid(self, form):
-        # Guardar la comisión
-        self.object = form.save()
-
-        # ¿Realmente vino el formset en el POST? (solo si están las claves del management form)
-        post = self.request.POST
-        has_formset = ("mca-TOTAL_FORMS" in post) or ("materiacomisionanio_set-TOTAL_FORMS" in post)
-
-        if has_formset:
-            formset = MCAFormSet(post, instance=self.object, prefix="mca")
-            if formset.is_valid():
-                formset.save()
-                messages.success(self.request, "Comisión guardada correctamente.")
-                return redirect(self.get_success_url())
-            # Si el formset tiene errores, re-render con errores
-            ctx = self.get_context_data(form=form)
-            ctx["formset"] = formset
-            return self.render_to_response(ctx)
-
-        # NO vino formset → redirigir normal
-        messages.success(self.request, "Comisión guardada correctamente.")
-        return redirect(self.get_success_url())
+    departamentos = Department.objects.all().order_by("nombre")
+    return render(request, "academics/materia_list.html", {
+        "materias": qs,
+        "q": q,
+        "departamentos": departamentos,
+        "selected_department": int(dept_id) if dept_id else None,
+        "create_url": "academics:materia_create",
+        "update_name": "academics:materia_update",
+        "delete_name": "academics:materia_delete",
+    })
 
 
-class ComisionList(ListView):
-    model = Comision
-    template_name = "academics/comision_list_admin.html"  # para no chocar con tu comision.html público
-    context_object_name = "comisiones"
-class ComisionCreateView(ComisionBaseMixin, CreateView):
-    def get_object(self, queryset=None):
-        return None
+@login_required
+def materia_create(request):
+    departamentos = Department.objects.all().order_by("nombre")
 
-class ComisionUpdateView(ComisionBaseMixin, UpdateView):
-    def get_queryset(self):
-        return Comision.objects.prefetch_related("materiacomisionanio_set__materia")
+    if request.method == "POST":
+        nombre = (request.POST.get("nombre") or "").strip()
+        departamento_id = request.POST.get("departamento")
+        descripcion = (request.POST.get("descripcion") or "").strip()
+        icono = (request.POST.get("icono") or "").strip()
+        imagen = request.FILES.get("imagen")
 
-class ComisionDelete(DeleteView):
-    model = Comision
-    template_name = "academics/confirm_delete.html"
-    success_url = reverse_lazy("academics:comision_list")
+        # objeto temporal para repoblar el form si hay errores
+        materia_tmp = Materia(
+            nombre=nombre,
+            descripcion=descripcion or None,
+            icono=icono or None,
+        )
+        if departamento_id:
+            try:
+                materia_tmp.departamento_id = int(departamento_id)
+            except ValueError:
+                pass
 
+        if not nombre or not departamento_id:
+            messages.error(request, "Nombre y Departamento son obligatorios.")
+            return render(request, "academics/materia_form.html", {
+                "materia": materia_tmp,
+                "departamentos": departamentos,
+            })
+
+        try:
+            m = Materia(
+                nombre=nombre,
+                departamento_id=int(departamento_id),
+                descripcion=descripcion or None,
+                icono=icono or None,
+            )
+            if imagen:
+                m.imagen = imagen
+            m.save()
+            messages.success(request, "Se creó correctamente.")
+            return redirect("academics:materia_list")
+        except IntegrityError:
+            messages.error(request, "Ya existe una materia con ese nombre.")
+            return render(request, "academics/materia_form.html", {
+                "materia": materia_tmp,
+                "departamentos": departamentos,
+            })
+
+    # GET
+    return render(request, "academics/materia_form.html", {
+        "materia": None,                      # <-- importante para “Nueva Materia”
+        "departamentos": departamentos,
+    })
+
+
+@login_required
+def materia_update(request, pk: int):
+    materia = get_object_or_404(Materia, pk=pk, eliminado=False)
+    departamentos = Department.objects.all().order_by("nombre")
+
+    if request.method == "POST":
+        nombre = (request.POST.get("nombre") or "").strip()
+        departamento_id = request.POST.get("departamento")
+        descripcion = (request.POST.get("descripcion") or "").strip()
+        icono = (request.POST.get("icono") or "").strip()
+        imagen = request.FILES.get("imagen")
+
+        if not nombre or not departamento_id:
+            messages.error(request, "Nombre y Departamento son obligatorios.")
+            # reflejar lo editado sin perder lo actual
+            materia.nombre = nombre
+            materia.descripcion = descripcion or None
+            materia.icono = icono or None
+            try:
+                materia.departamento_id = int(departamento_id)
+            except (TypeError, ValueError):
+                pass
+            return render(request, "academics/materia_form.html", {
+                "materia": materia,             # <-- clave para “Editar Materia” y precarga
+                "departamentos": departamentos,
+            })
+
+        try:
+            materia.nombre = nombre
+            materia.departamento_id = int(departamento_id)
+            materia.descripcion = descripcion or None
+            materia.icono = icono or None
+            if imagen:
+                materia.imagen = imagen
+            materia.save()
+            messages.success(request, "Se actualizó correctamente.")
+            return redirect("academics:materia_list")
+        except IntegrityError:
+            messages.error(request, "Ya existe una materia con ese nombre.")
+            return render(request, "academics/materia_form.html", {
+                "materia": materia,
+                "departamentos": departamentos,
+            })
+
+    # GET
+    return render(request, "academics/materia_form.html", {
+        "materia": materia,                    # <-- objeto real
+        "departamentos": departamentos,
+    })
+
+
+@login_required
+def materia_delete(request, pk: int):
+    materia = get_object_or_404(Materia, pk=pk)
+    if request.method == "POST":
+        try:
+            materia.delete()
+            messages.success(request, "Se eliminó correctamente.")
+        except (ProtectedError, IntegrityError):
+            messages.error(request, "No se pudo eliminar: hay comisiones/años asociados a esta materia.")
+        return redirect("academics:materia_list")
+
+    return render(request, "academics/confirm_delete.html", {
+        "object": materia,
+        "cancel_url": reverse("academics:materia_list"),
+        "title": "Eliminar Materia",
+    })
+
+#-------- Comisión --------
+@login_required
+def comision_list(request):
+    q = (request.GET.get("q") or "").strip()
+    year = (request.GET.get("year") or "").strip()
+
+    qs = Comision.objects.all().order_by("nombre")
+    if q:
+        qs = qs.filter(nombre__icontains=q)
+
+    if year.isdigit():
+        year_int = int(year)
+        # Solo comisiones que tengan al menos una MCA en ese año
+        subq = MateriaComisionAnio.objects.filter(comision_id=OuterRef("pk"), anio=year_int)
+        qs = qs.annotate(has_year=Exists(subq)).filter(has_year=True)
+
+    years = (MateriaComisionAnio.objects.order_by("-anio")
+                .values_list("anio", flat=True).distinct())
+
+    return render(request, "academics/comision_list_admin.html", {
+        "comisiones": qs,
+        "q": q,
+        "years": years,
+        "selected_year": int(year) if year.isdigit() else None,
+        "create_url": "academics:comision_create",
+        "update_name": "academics:comision_update",
+        "delete_name": "academics:comision_delete",
+    })
+
+@login_required
+def comision_create(request):
+    departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
+    profesores = (User.objects
+                    .filter(rol=User.Role.PROFESOR, is_active=True)
+                    .order_by("last_name", "first_name"))
+
+    if request.method == "GET":
+        return render(request, "academics/comision_form.html", {
+            "departamentos": departamentos,
+            "profesores": profesores,
+        })
+
+    # Datos de la comisión
+    nombre = (request.POST.get("nombre") or "").strip()
+    icono = (request.POST.get("icono") or "").strip()
+    imagen = request.FILES.get("imagen")
+
+    if not nombre:
+        messages.error(request, "El nombre es obligatorio.")
+        return render(request, "academics/comision_form.html", {
+            "departamentos": departamentos, "profesores": profesores,
+            "nombre": nombre, "icono": icono
+        })
+
+    try:
+        c = Comision(nombre=nombre, icono=icono)
+        if imagen:
+            c.imagen = imagen
+        c.save()
+        messages.success(request, "Comisión creada.")
+
+        # --- Asignación opcional: Materia + Año + (docentes) ---
+        m_id = request.POST.get("mca_materia")
+        anio = request.POST.get("mca_anio")
+        titular_id = request.POST.get("mca_titular")
+        jtp_id = request.POST.get("mca_jtp")
+        ayudante_id = request.POST.get("mca_ayudante")
+
+        if m_id and anio and anio.isdigit():
+            try:
+                MateriaComisionAnio.objects.create(
+                    materia_id=int(m_id),
+                    comision=c,
+                    anio=int(anio),
+                    titular_id=int(titular_id) if titular_id else None,
+                    jtp_id=int(jtp_id) if jtp_id else None,
+                    ayudante_id=int(ayudante_id) if ayudante_id else None,
+                )
+                messages.success(request, "Asignación Materia+Año creada.")
+            except IntegrityError:
+                messages.error(request, "Ya existe una asignación para esa Materia/Año en esta Comisión.")
+
+        return redirect("academics:comision_list")
+
+    except IntegrityError:
+        messages.error(request, "Ya existe una comisión con ese nombre.")
+        return render(request, "academics/comision_form.html", {
+            "departamentos": departamentos, "profesores": profesores,
+            "nombre": nombre, "icono": icono
+        })
+
+@login_required
+def comision_update(request, pk: int):
+    c = get_object_or_404(Comision, pk=pk)
+    departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
+    profesores = (User.objects
+                    .filter(rol=User.Role.PROFESOR, is_active=True)
+                    .order_by("last_name", "first_name"))
+
+    if request.method == "GET":
+        asignaciones = (MateriaComisionAnio.objects
+                        .select_related("materia", "titular", "jtp", "ayudante")
+                        .filter(comision=c).order_by("-anio", "materia__nombre"))
+        return render(request, "academics/comision_form.html", {
+            "obj": c,
+            "nombre": c.nombre,
+            "icono": c.icono or "",
+            "departamentos": departamentos,
+            "profesores": profesores,
+            "asignaciones": asignaciones,
+        })
+
+    # actualizar comisión
+    nombre = (request.POST.get("nombre") or "").strip()
+    icono = (request.POST.get("icono") or "").strip()
+    imagen = request.FILES.get("imagen")
+
+    if not nombre:
+        messages.error(request, "El nombre es obligatorio.")
+        return render(request, "academics/comision_form.html", {
+            "obj": c, "nombre": nombre, "icono": icono,
+            "departamentos": departamentos, "profesores": profesores
+        })
+
+    c.nombre = nombre
+    c.icono = icono
+    if imagen:
+        c.imagen = imagen
+
+    try:
+        c.save()
+        messages.success(request, "Comisión actualizada.")
+    except IntegrityError:
+        messages.error(request, "Ya existe una comisión con ese nombre.")
+        return render(request, "academics/comision_form.html", {
+            "obj": c, "nombre": nombre, "icono": icono,
+            "departamentos": departamentos, "profesores": profesores
+        })
+
+    # --- Asignación opcional: Materia + Año + (docentes) ---
+    m_id = request.POST.get("mca_materia")
+    anio = request.POST.get("mca_anio")
+    titular_id = request.POST.get("mca_titular")
+    jtp_id = request.POST.get("mca_jtp")
+    ayudante_id = request.POST.get("mca_ayudante")
+
+    if m_id and anio and anio.isdigit():
+        try:
+            MateriaComisionAnio.objects.create(
+                materia_id=int(m_id),
+                comision=c,
+                anio=int(anio),
+                titular_id=int(titular_id) if titular_id else None,
+                jtp_id=int(jtp_id) if jtp_id else None,
+                ayudante_id=int(ayudante_id) if ayudante_id else None,
+            )
+            messages.success(request, "Asignación Materia+Año creada.")
+        except IntegrityError:
+            messages.error(request, "Ya existe una asignación para esa Materia/Año en esta Comisión.")
+
+    return redirect("academics:comision_update", pk=c.pk)
+
+@login_required
+def comision_delete(request, pk: int):
+    c = get_object_or_404(Comision, pk=pk)
+    if request.method == "GET":
+        return render(request, "academics/confirm_delete.html", {
+            "object": c,
+            "cancel_url": reverse("academics:comision_list"),
+            "title": "Eliminar Comisión"
+        })
+
+    try:
+        c.delete()
+        messages.success(request, "Se eliminó correctamente.")
+    except (ProtectedError, IntegrityError):
+        messages.error(request, "No se pudo eliminar: hay asignaciones (Materia+Año) vinculadas.")
+    return redirect("academics:comision_list")
+
+
+# -------- Esto no es de Admin --------
 @login_required
 def editar_resena_mca(request, mca_id):
     """

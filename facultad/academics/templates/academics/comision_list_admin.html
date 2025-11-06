@@ -1,60 +1,58 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}Comisiones{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'academics/css/comision_list.css' %}">
+<link rel="stylesheet" href="{% static 'academics/css/academics.css' %}">
 {% endblock %}
 
 {% block content %}
-<section class="ap-list-wrap">
-  <div class="ap-card">
-    <div class="ap-head">
-      <h2>Comisiones</h2>
-      <a class="ap-btn ap-btn-primary" href="{% url 'academics:comision_create' %}">+ Nueva</a>
-    </div>
+<div class="ap-wrap">
 
+  <div class="ap-toolbar">
+    <h1 class="ap-title">Comisiones</h1>
+
+    <div class="ap-actions">
+      <form method="get" class="ap-search" style="display:flex; gap:.5rem; align-items:center;">
+        <input type="text" name="q" value="{{ q }}" placeholder="Buscar por nombre">
+        <select name="year" class="ap-select" onchange="this.form.submit()">
+          <option value="">Todos los años</option>
+          {% for y in years %}
+            <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </form>
+
+      <a href="{% url create_url %}" class="ap-btn ap-btn-primary">+ Nueva</a>
+    </div>
+  </div>
+
+  {% include "academics/Components/messages.html" %}
+
+  <div class="ap-card ap-table-wrap">
     <table class="ap-table">
       <thead>
         <tr>
           <th>Nombre</th>
-          <th>Materia(s) y Año(s)</th>
-          <th style="width:190px" class="text-end">Acciones</th>
+          <th class="ap-right">Acciones</th>
         </tr>
       </thead>
       <tbody>
-        {% for it in comisiones %}
-        <tr>
-          <td>{{ it.nombre }}</td>
-          <td>
-            {% with enlaces=it.materiacomisionanio_set.all %}
-              {% if enlaces %}
-              <div class="ap-rel">
-                {% for mca in enlaces %}
-                <span class="ap-chip">
-                  {{ mca.materia.nombre|default:mca.materia }}
-                  <small>· {{ mca.anio }}</small>
-                </span>
-                {% endfor %}
-              </div>
-              {% else %}
-              <span class="text-muted">—</span>
-              {% endif %}
-            {% endwith %}
-          </td>
-
-          <td class="text-end">
-            <div class="ap-actions-row">
-              <a class="ap-btn ap-btn-sm ap-btn-outline-secondary" href="{% url 'academics:comision_update' it.pk %}">Editar</a>
-              <a class="ap-btn ap-btn-sm ap-btn-outline-danger" href="{% url 'academics:comision_delete' it.pk %}">Eliminar</a>
-            </div>
-          </td>
-        </tr>
+        {% for c in comisiones %}
+          <tr>
+            <td class="ap-name">{{ c.nombre }}</td>
+            <td class="ap-right">
+              <a href="{% url update_name c.id %}" class="ap-btn ap-btn-light">Editar</a>
+              <a href="{% url delete_name c.id %}" class="ap-btn ap-btn-danger">Eliminar</a>
+            </td>
+          </tr>
         {% empty %}
-        <tr><td colspan="3" class="ap-empty">Sin registros.</td></tr>
+          <tr><td colspan="2" class="ap-muted">No hay comisiones para los filtros aplicados.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-</section>
+
+</div>
 {% endblock %}
