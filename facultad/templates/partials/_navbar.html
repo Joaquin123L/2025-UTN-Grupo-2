@@ -24,7 +24,7 @@
           {% endif %}
         </a>
       </div>
-    {% elif not request.user.is_authenticated and request.user.rol == "ADM" %}
+    {% elif not request.user.is_authenticated%}
       <div class="navbar__right">
         <a class="btn btn-light btn-sm" href="{% url 'people:register' %}">Registrate</a>
         <a class="btn btn-light btn-sm" href="{% url 'people:login' %}">Iniciar sesión</a>
