@@ -3,41 +3,50 @@
 {% block title %}Palabras censuradas{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'academics/css/censored_list.css' %}">
+<link rel="stylesheet" href="{% static 'academics/css/academics.css' %}">
 {% endblock %}
 
 {% block content %}
-<section class="ap-list-wrap">
-  <div class="ap-card">
-    <div class="ap-head">
-      <h2>Palabras censuradas</h2>
-      <button class="ap-btn ap-btn-primary" onclick="openCreateModal()">+ Nueva</button>
-    </div>
+<div class="ap-wrap">
 
+  <div class="ap-toolbar">
+    <h1 class="ap-title">Palabras censuradas</h1>
+    <a onclick="openCreateModal()" class="ap-btn ap-btn-primary">+ Nueva</a>
+  </div>
+
+  <div class="ap-card ap-table-wrap">
     <table class="ap-table">
+      <colgroup>
+    <col />
+    <col style="width:1%" /> 
+      </colgroup>
       <thead>
         <tr>
           <th>Palabra</th>
-          <th style="width:190px" class="text-end">Acciones</th>
+          <th class="ap-right">Acciones</th>
         </tr>
       </thead>
       <tbody id="words-table-body">
         {% for it in object_list %}
         <tr>
           <td>{{ it.palabra }}</td>
-          <td class="text-end">
-            <div class="ap-actions-row">
-              <button class="ap-btn ap-btn-sm ap-btn-outline-secondary"
-                      data-id="{{ it.pk }}" data-word="{{ it.palabra|escapejs|escape }}"
-                      onclick="openEditModal(this.dataset.id, this.dataset.word)">Editar</button>
-              <button class="ap-btn ap-btn-sm ap-btn-outline-danger"
-                      data-id="{{ it.pk }}" data-word="{{ it.palabra|escapejs|escape }}"
-                      onclick="openDeleteModal(this.dataset.id, this.dataset.word)">Eliminar</button>
-            </div>
-          </td>
+          <td class="ap-right">
+              <div class="ap-actions-row">
+                <a href="#" role="button"
+                  class="ap-btn ap-btn-sm ap-btn-outline-secondary"
+                  data-id="{{ it.pk }}" data-word="{{ it.palabra|escapejs|escape }}"
+                  onclick="openEditModal(this.dataset.id, this.dataset.word); return false;">Editar</a>
+
+                <a href="#" role="button"
+                  class="ap-btn ap-btn-sm ap-btn-outline-danger"
+                  data-id="{{ it.pk }}" data-word="{{ it.palabra|escapejs|escape }}"
+                  onclick="openDeleteModal(this.dataset.id, this.dataset.word); return false;">Eliminar</a>
+              </div>
+            </td>
+
         </tr>
         {% empty %}
-        <tr id="empty-row"><td colspan="2" class="ap-empty">Sin registros.</td></tr>
+        <tr id="empty-row"><td colspan="2" class="ap-muted">Sin registros.</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -64,7 +73,8 @@
       </nav>
     {% endif %}
   </div>
-</section>
+
+</div>
 
 <div id="form-modal" class="modal-overlay">
   <div class="modal-content">
