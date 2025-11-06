@@ -4,20 +4,85 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'academics/css/departamento.css' %}">
-{% endblock %}
+<style>
+  /* ===== RANKING (solo si aún no moviste esto a tu CSS) ===== */
+  .ap-section-title{font-size:28px;font-weight:800;letter-spacing:-0.01em;margin:44px 6px 18px}
+  .ap-hlist{display:flex;gap:22px;overflow-x:auto;padding:8px 2px 10px;scroll-snap-type:x mandatory}
+  .ap-hlist::-webkit-scrollbar{height:6px}
+  .ap-hlist::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
 
+  .ap-link{display:block;text-decoration:none;color:inherit}
+
+  .ap-card-chip{min-width:280px;border:1px solid #e6e8ec;border-radius:22px;padding:18px 20px;background:#fff;
+    box-shadow:0 6px 24px rgba(0,0,0,.06);scroll-snap-align:start;flex-shrink:0;transition:transform .18s, box-shadow .18s}
+  .ap-card-chip:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.10)}
+  .ap-chip-title{font-weight:800;font-size:22px;margin:0 0 6px}
+  .ap-chip-sub{font-size:12px;letter-spacing:.12em;color:#6b7280;text-transform:uppercase}
+  .ap-chip-row{display:flex;align-items:center;gap:12px;margin-top:10px}
+  .ap-rating{display:flex;align-items:center;gap:10px}
+  .ap-rating strong{font-size:20px}
+  .ap-stars{display:flex;gap:4px}
+  .ap-stars svg{width:18px;height:18px}
+  .ap-muted-small{font-size:13px;color:#6b7280;margin-top:10px}
+
+  .ap-prof-card{min-width:420px;display:flex;gap:16px;align-items:center;border:1px solid #e6e8ec;border-radius:22px;
+    padding:18px 20px;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.06);scroll-snap-align:start;flex-shrink:0;
+    transition:transform .18s, box-shadow .18s}
+  .ap-prof-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.10)}
+  .ap-avatar{width:64px;height:64px;border-radius:999px;object-fit:cover;background:#f3f4f6}
+  .ap-prof-name{font-weight:800;font-size:22px}
+  .ap-prof-meta{font-size:14px;color:#6b7280;margin-top:2px}
+  .ap-prof-stars{margin-top:8px}
+  /* Stars iguales a las del perfil */
+/* Estrellas amarillas con borde (full/half/empty) */
+.ap-stars { display: flex; gap: 6px; }
+
+.ap-star{
+  position: relative;
+  font-size: 18px;        /* ajustá tamaño si querés */
+  line-height: 1;
+  color: transparent;     /* sin relleno en el span base */
+  -webkit-text-stroke: 1.2px #c7ccd1; /* borde gris para vacías */
+  text-stroke: 1.2px #c7ccd1;         /* fallback */
+  user-select: none;
+}
+
+/* Cuando hay relleno (llena o media), el borde es oscuro */
+.ap-star.on,
+.ap-star.half{
+  -webkit-text-stroke: 1.2px #111;
+}
+
+/* Relleno amarillo: dibujamos otra estrella encima */
+.ap-star.on::after{
+  content: '★';
+  position: absolute; left: 0; top: 0;
+  color: #fbbf24;           /* amarillo */
+}
+
+/* Media estrella: relleno a la mitad */
+.ap-star.half::after{
+  content: '★';
+  position: absolute; left: 0; top: 0;
+  color: #fbbf24;
+  width: 50%;
+  overflow: hidden;
+}
+
+
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="aa-container">
   <div class="aa-toolbar">
     <div class="aa-titles">
-  <h2 class="aa-h2">Departamentos:</h2>
-</div>
+      <h2 class="aa-h2">Departamentos:</h2>
+    </div>
 
     <div class="aa-search">
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M15.5 14h-.79l-.28-.27a6.471 6.471 0 0 0 1.57-4.23C15.99 6.01 13.48 3.5 10.5 3.5S5 6.01 5 9s2.51 5.5 5.5 5.5c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l4.25 4.25 1.27-1.27L15.5 14Zm-5 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14Z" />
+        <path d="M15.5 14h-.79l-.28-.27a6.471 6.471 0 0 0 1.57-4.23C15.99 6.01 13.48 3.5 10.5 3.5S5 6.01 5 9s2.51 5.5 5.5 5.5c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l4.25 4.25 1.27-1.27L15.5 14Zm-5 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14Z"/>
       </svg>
       <input id="search" type="text" placeholder="Buscar" autocomplete="off">
     </div>
@@ -25,20 +90,79 @@
 
   <section id="grid" class="aa-grid">
     {% for d in departments %}
-    {% url 'academics:subjects_by_dept' d.id as subj_url %}
-    {% include "academics/Components/card.html" with title=d.nombre image_url=d.imagen icon=d.icono badge=d.badge rating=d.calificacion opiniones=d.opiniones href=subj_url new_tab=False %}
+      {% url 'academics:subjects_by_dept' d.id as subj_url %}
+      {% include "academics/Components/card.html" with title=d.nombre image_url=d.imagen icon=d.icono badge=d.badge rating=d.calificacion opiniones=d.opiniones href=subj_url new_tab=False %}
     {% empty %}
       <p>No hay departamentos disponibles.</p>
     {% endfor %}
   </section>
+
+  <!-- ===== RANKING ===== -->
+  <h2 class="ap-section-title">Materias mejor puntuadas</h2>
+  <div class="ap-hlist">
+    {% for m in top_materias %}
+      <a class="ap-link ap-card-chip" href="{% url 'academics:perfil_materia' m.id %}">
+        <div class="ap-chip-title">{{ m.nombre }}</div>
+        {% if m.departamento %}
+          <div class="ap-chip-sub">{{ m.departamento.nombre }}</div>
+        {% endif %}
+        <div class="ap-chip-row">
+          <div class="ap-rating">
+            <strong>{{ m.promedio|floatformat:1 }}</strong>
+            <div class="ap-stars" data-avg="{{ m.promedio }}"></div>
+          </div>
+        </div>
+        <div class="ap-muted-small">
+          <span class="kfmt" data-count="{{ m.cantidad }}">{{ m.cantidad }}</span> opiniones
+        </div>
+      </a>
+    {% empty %}
+      <div class="ap-muted">Aún no hay reseñas de materias.</div>
+    {% endfor %}
+  </div>
+
+  <h2 class="ap-section-title">Los mejores profes de la Facu</h2>
+  <div class="ap-hlist">
+    {% for p in top_profes %}
+      <a class="ap-link ap-prof-card" href="{% url 'people:perfil_profesor' p.user.username %}">
+        {% if p.user.profile_image %}
+          <img class="ap-avatar" src="{{ p.user.profile_image.url }}" alt="{{ p.user.get_full_name|default:p.user.username }}">
+        {% else %}
+          <div class="ap-avatar"></div>
+        {% endif %}
+        <div>
+          <div class="ap-prof-name">{{ p.user.get_full_name|default:p.user.username }}</div>
+          <div class="ap-prof-meta">
+            Promedio {{ p.promedio|floatformat:1 }} •
+            <span class="kfmt" data-count="{{ p.cantidad }}">{{ p.cantidad }}</span> opiniones
+          </div>
+          <div class="ap-prof-stars ap-stars" data-avg="{{ p.promedio }}"></div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="ap-muted">Aún no hay reseñas de profesores.</div>
+    {% endfor %}
+  </div>
 </div>
 
 <script>
-  const input = document.getElementById('search');
-  const cards = Array.from(document.querySelectorAll('.aa-card'));
-  input.addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    cards.forEach(c => c.style.display = c.dataset.name.includes(q) ? '' : 'none');
+  // Render de estrellas con el mismo estilo del perfil (★, clases on/half)
+  function renderStars(container, avg){
+    const a = isNaN(avg) ? 0 : Math.max(0, Math.min(5, parseFloat(avg)));
+    const full = Math.floor(a);
+    const half = (a - full) >= 0.5 ? 1 : 0;
+    const empty = 5 - full - half;
+
+    let html = '';
+    for(let i=0;i<full;i++)  html += '<span class="ap-star on">★</span>';
+    if(half)                 html += '<span class="ap-star half">★</span>';
+    for(let i=0;i<empty;i++) html += '<span class="ap-star">★</span>';
+    container.innerHTML = html;
+  }
+
+  document.querySelectorAll('.ap-stars[data-avg]').forEach(c=>{
+    renderStars(c, parseFloat(c.dataset.avg || '0'));
   });
 </script>
+
 {% endblock %}
