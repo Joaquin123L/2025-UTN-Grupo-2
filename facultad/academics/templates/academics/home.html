@@ -5,72 +5,64 @@
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'academics/css/departamento.css' %}">
 <style>
-  /* ===== RANKING (solo si aún no moviste esto a tu CSS) ===== */
-  .ap-section-title{font-size:28px;font-weight:800;letter-spacing:-0.01em;margin:44px 6px 18px}
-  .ap-hlist{display:flex;gap:22px;overflow-x:auto;padding:8px 2px 10px;scroll-snap-type:x mandatory}
-  .ap-hlist::-webkit-scrollbar{height:6px}
-  .ap-hlist::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+  /* ===== STARS (entero, sin medias) ===== */
+.ap-stars{ display:inline-flex; gap:2px; line-height:1; font-size:18px; }
+.ap-stars .star{ color:#e5e7eb; font-style:normal; }
+.ap-stars .star.on{ color:#f59e0b; }
 
-  .ap-link{display:block;text-decoration:none;color:inherit}
 
-  .ap-card-chip{min-width:280px;border:1px solid #e6e8ec;border-radius:22px;padding:18px 20px;background:#fff;
-    box-shadow:0 6px 24px rgba(0,0,0,.06);scroll-snap-align:start;flex-shrink:0;transition:transform .18s, box-shadow .18s}
-  .ap-card-chip:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.10)}
-  .ap-chip-title{font-weight:800;font-size:22px;margin:0 0 6px}
-  .ap-chip-sub{font-size:12px;letter-spacing:.12em;color:#6b7280;text-transform:uppercase}
-  .ap-chip-row{display:flex;align-items:center;gap:12px;margin-top:10px}
-  .ap-rating{display:flex;align-items:center;gap:10px}
-  .ap-rating strong{font-size:20px}
-  .ap-stars{display:flex;gap:4px}
-  .ap-stars svg{width:18px;height:18px}
-  .ap-muted-small{font-size:13px;color:#6b7280;margin-top:10px}
 
-  .ap-prof-card{min-width:420px;display:flex;gap:16px;align-items:center;border:1px solid #e6e8ec;border-radius:22px;
-    padding:18px 20px;background:#fff;box-shadow:0 6px 24px rgba(0,0,0,.06);scroll-snap-align:start;flex-shrink:0;
-    transition:transform .18s, box-shadow .18s}
-  .ap-prof-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.10)}
-  .ap-avatar{width:64px;height:64px;border-radius:999px;object-fit:cover;background:#f3f4f6}
-  .ap-prof-name{font-weight:800;font-size:22px}
-  .ap-prof-meta{font-size:14px;color:#6b7280;margin-top:2px}
-  .ap-prof-stars{margin-top:8px}
-  /* Stars iguales a las del perfil */
-/* Estrellas amarillas con borde (full/half/empty) */
-.ap-stars { display: flex; gap: 6px; }
 
-.ap-star{
-  position: relative;
-  font-size: 18px;        /* ajustá tamaño si querés */
-  line-height: 1;
-  color: transparent;     /* sin relleno en el span base */
-  -webkit-text-stroke: 1.2px #c7ccd1; /* borde gris para vacías */
-  text-stroke: 1.2px #c7ccd1;         /* fallback */
-  user-select: none;
+
+/* ===== LINKS ===== */
+.ap-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
 }
 
-/* Cuando hay relleno (llena o media), el borde es oscuro */
-.ap-star.on,
-.ap-star.half{
-  -webkit-text-stroke: 1.2px #111;
+/* ===== CHIP Y RATING ===== */
+.ap-chip-title {
+  font-weight: 800;
+  font-size: 22px;
+  margin: 0 0 6px;
+}
+.ap-rating {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ap-muted-small {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 10px;
 }
 
-/* Relleno amarillo: dibujamos otra estrella encima */
-.ap-star.on::after{
-  content: '★';
-  position: absolute; left: 0; top: 0;
-  color: #fbbf24;           /* amarillo */
+/* ===== PROF CARD ===== */
+.ap-prof-card {
+  min-width: 420px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid #e6e8ec;
+  border-radius: 22px;
+  padding: 18px 20px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .06);
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  transition: transform .18s, box-shadow .18s;
 }
-
-/* Media estrella: relleno a la mitad */
-.ap-star.half::after{
-  content: '★';
-  position: absolute; left: 0; top: 0;
-  color: #fbbf24;
-  width: 50%;
-  overflow: hidden;
+.ap-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #f3f4f6;
 }
-
 
 </style>
+
 {% endblock %}
 
 {% block content %}
@@ -97,7 +89,7 @@
     {% endfor %}
   </section>
 
-  <!-- ===== RANKING ===== -->
+ <!-- ===== RANKING ===== -->
   <h2 class="ap-section-title">Materias mejor puntuadas</h2>
   <div class="ap-hlist">
     {% for m in top_materias %}
@@ -108,10 +100,15 @@
         {% endif %}
         <div class="ap-chip-row">
           <div class="ap-rating">
-            <strong>{{ m.promedio|floatformat:1 }}</strong>
-            <div class="ap-stars" data-avg="{{ m.promedio }}"></div>
-          </div>
-        </div>
+  <strong>{{ m.promedio|floatformat:1 }}</strong>
+  <div class="ap-stars" aria-label="Puntaje {{ m.promedio|floatformat:1 }} de 5">
+    {% for _ in "12345" %}
+      <i class="star{% if forloop.counter <= m.promedio|default:0 %} on{% endif %}">★</i>
+    {% endfor %}
+  </div>
+</div>
+
+        </div >
         <div class="ap-muted-small">
           <span class="kfmt" data-count="{{ m.cantidad }}">{{ m.cantidad }}</span> opiniones
         </div>
@@ -136,7 +133,12 @@
             Promedio {{ p.promedio|floatformat:1 }} •
             <span class="kfmt" data-count="{{ p.cantidad }}">{{ p.cantidad }}</span> opiniones
           </div>
-          <div class="ap-prof-stars ap-stars" data-avg="{{ p.promedio }}"></div>
+          <div class="ap-prof-stars ap-stars" aria-label="Puntaje {{ p.promedio|floatformat:1 }} de 5">
+  {% for _ in "12345" %}
+    <i class="star{% if forloop.counter <= p.promedio|default:0 %} on{% endif %}">★</i>
+  {% endfor %}
+</div>
+
         </div>
       </a>
     {% empty %}
@@ -144,25 +146,4 @@
     {% endfor %}
   </div>
 </div>
-
-<script>
-  // Render de estrellas con el mismo estilo del perfil (★, clases on/half)
-  function renderStars(container, avg){
-    const a = isNaN(avg) ? 0 : Math.max(0, Math.min(5, parseFloat(avg)));
-    const full = Math.floor(a);
-    const half = (a - full) >= 0.5 ? 1 : 0;
-    const empty = 5 - full - half;
-
-    let html = '';
-    for(let i=0;i<full;i++)  html += '<span class="ap-star on">★</span>';
-    if(half)                 html += '<span class="ap-star half">★</span>';
-    for(let i=0;i<empty;i++) html += '<span class="ap-star">★</span>';
-    container.innerHTML = html;
-  }
-
-  document.querySelectorAll('.ap-stars[data-avg]').forEach(c=>{
-    renderStars(c, parseFloat(c.dataset.avg || '0'));
-  });
-</script>
-
 {% endblock %}
