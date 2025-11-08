@@ -464,7 +464,7 @@ class SubirAvatarView(LoginRequiredMixin, View):
 def professor_list(request):
     profesores = (
         UserModel.objects
-        .filter(rol=UserModel.Role.PROFESOR)
+        .filter(rol=UserModel.Role.PROFESOR, is_active=True)
         .order_by("last_name", "first_name")
     )
     return render(request, "people/professor_list.html", {"object_list": profesores})
@@ -499,23 +499,17 @@ class ProfessorDeleteView(LoginRequiredMixin, DeleteView):
     login_url = "people:login"
 
     def get_queryset(self):
-        # Que la URL exista para cualquier profesor
         return UserModel.objects.filter(rol=UserModel.Role.PROFESOR)
 
-    def delete(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        if self.object.is_active:
+            self.object.is_active = False
+            self.object.save(update_fields=["is_active"])
 
-        # Bloqueá si tiene vínculos
-        has_links = (
-            self.object.materias_como_titular.exists()
-            or self.object.materias_como_jtp.exists()
-            or self.object.materias_como_ayudante.exists()
-            or self.object.resenas_como_titular.exists()
-            or self.object.resenas_como_jtp.exists()
-        )
+        MateriaComisionAnio.objects.filter(titular=self.object, active=True).update(active=False)
+        MateriaComisionAnio.objects.filter(jtp=self.object, active=True).update(active=False)
+        MateriaComisionAnio.objects.filter(ayudante=self.object, active=True).update(active=False)
 
-        if has_links:
-            messages.error(request, "No se puede eliminar: el profesor tiene materias o reseñas asociadas.")
-            return redirect(self.success_url)
-
-        return super().delete(request, *args, **kwargs)
+        messages.success(request, "Profesor desactivado correctamente.")
+        return redirect(self.success_url)
