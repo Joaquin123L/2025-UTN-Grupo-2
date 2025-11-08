@@ -34,10 +34,31 @@ User = get_user_model()
 class CustomSignupView(SignupView):
     template_name = 'people/register.html'
 
+    # 👉 Ajustá esta tupla si la institución tiene más dominios válidos
+    VALID_EMAIL_DOMAINS = ("alu.frlp.utn.edu.ar",)
+
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             logout(request)
         return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # Validación **server-side** (no saltable)
+        email = (form.cleaned_data.get("email") or "").strip().lower()
+        if not any(email.endswith(f"@{d}") for d in self.VALID_EMAIL_DOMAINS):
+            form.add_error(
+                "email",
+                f"Debe utilizar un correo institucional para registrarse "
+                f"(dominios permitidos: {', '.join(self.VALID_EMAIL_DOMAINS)})."
+            )
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # Lo usamos en el JS del template
+        ctx["allowed_domains"] = list(self.VALID_EMAIL_DOMAINS)
+        return ctx
     
 
 register = CustomSignupView.as_view()
