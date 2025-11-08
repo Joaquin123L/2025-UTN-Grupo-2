@@ -40,6 +40,7 @@ urlpatterns = [
     path("", lambda request: redirect("people:login")),
     path("academics/", include("academics.urls")),
     path("accounts/login/", lambda request: redirect("people:login")),
+    path("accounts/signup/", lambda request: redirect("people:account_signup")),
     path("accounts/", include("allauth.urls")),
     path("navbar-test/", TemplateView.as_view(template_name="navbar_test.html"), name="navbar-test"),
     path("post-login/", login_required(post_login_redirect), name="post_login"),
