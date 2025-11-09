@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Max, Value, OuterRef, Subquery, IntegerField, FloatField, Exists, Q
+from django.db.models import Avg, Count, Max, Value, OuterRef, Subquery, IntegerField, FloatField, Exists, Q, Prefetch
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import localtime
@@ -396,7 +396,7 @@ class AdminPanelView(TemplateView):
 @login_required
 def dept_list(request):
     q = (request.GET.get("q") or "").strip()
-    qs = Department.objects.all().order_by("nombre")
+    qs = Department.objects.filter(active=True).order_by("nombre")
     if q:
         qs = qs.filter(nombre__icontains=q)
 
@@ -473,7 +473,9 @@ def dept_delete(request, pk: int):
         })
 
     try:
-        d.delete()
+        d.active = False
+        d.save()
+        Materia.objects.filter(departamento=d).update(active=False)
         messages.success(request, "Se eliminó correctamente.")
     except (ProtectedError, IntegrityError):
         messages.error(request, "No se pudo eliminar: hay materias asignadas a este departamento.")
@@ -487,7 +489,7 @@ def materia_list(request):
 
     qs = (Materia.objects
             .select_related("departamento")
-            .filter(eliminado=False)
+            .filter(eliminado=False, active=True)
             .order_by("nombre"))
 
     if q:
@@ -559,8 +561,8 @@ def materia_create(request):
 
     # GET
     return render(request, "academics/materia_form.html", {
-        "materia": None,                      # <-- importante para “Nueva Materia”
-        "departamentos": departamentos,
+        "materia": None,
+        "departamentos": Department.objects.filter(active=True).order_by("nombre"),
     })
 
 
@@ -620,7 +622,10 @@ def materia_delete(request, pk: int):
     materia = get_object_or_404(Materia, pk=pk)
     if request.method == "POST":
         try:
-            materia.delete()
+            materia.active = False
+            materia.save()
+            #si esa materia pertenece a un mca cambiar el active de esos mca a false tambien
+            MateriaComisionAnio.objects.filter(materia=materia).update(active=False)
             messages.success(request, "Se eliminó correctamente.")
         except (ProtectedError, IntegrityError):
             messages.error(request, "No se pudo eliminar: hay comisiones/años asociados a esta materia.")
@@ -638,7 +643,7 @@ def comision_list(request):
     q = (request.GET.get("q") or "").strip()
     year = (request.GET.get("year") or "").strip()
 
-    qs = Comision.objects.all().order_by("nombre")
+    qs = Comision.objects.filter(active=True).order_by("nombre")
     if q:
         qs = qs.filter(nombre__icontains=q)
 
@@ -661,9 +666,23 @@ def comision_list(request):
         "delete_name": "academics:comision_delete",
     })
 
+def _departamentos_con_materias_activas():
+    return (
+        Department.objects
+        .filter(active=True)
+        .order_by("nombre")
+        .prefetch_related(
+            Prefetch(
+                "materias",
+                queryset=Materia.objects.filter(active=True).only("id", "nombre", "departamento"),
+                to_attr="materias_activas",
+            )
+        )
+    )
+
 @login_required
 def comision_create(request):
-    departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
+    departamentos = _departamentos_con_materias_activas()
     profesores = (User.objects
                     .filter(rol=User.Role.PROFESOR, is_active=True)
                     .order_by("last_name", "first_name"))
@@ -805,7 +824,11 @@ def comision_delete(request, pk: int):
         })
 
     try:
-        c.delete()
+        #cambiamos active a False en lugar de eliminar
+        c.active = False
+        c.save()
+        MateriaComisionAnio.objects.filter(comision=c).update(active=False)
+        
         messages.success(request, "Se eliminó correctamente.")
     except (ProtectedError, IntegrityError):
         messages.error(request, "No se pudo eliminar: hay asignaciones (Materia+Año) vinculadas.")
