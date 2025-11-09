@@ -15,6 +15,7 @@ class Department(models.Model):
 
     class Meta:
         ordering = ["nombre"]
+        verbose_name = "Departamento"
 
     def __str__(self):
         return self.nombre
@@ -32,6 +33,7 @@ class Materia(models.Model):
 
     class Meta:
         ordering = ["nombre"]
+        verbose_name = "Materia"
 
     def __str__(self):
         return self.nombre
@@ -45,6 +47,7 @@ class Comision(models.Model):
 
     class Meta:
         ordering = ["nombre"]
+        verbose_name = "Comisión"
 
     def __str__(self):
         return self.nombre
