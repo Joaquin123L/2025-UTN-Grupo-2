@@ -58,7 +58,7 @@
         <select id="dep-select" class="ap-select">
           <option value="">Seleccionar...</option>
           {% for d in departamentos %}
-            <option value="{{ d.id }}" data-materias='[{% for m in d.materias.all %}{"id":{{ m.id }},"nombre":"{{ m.nombre|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'>{{ d.nombre }}</option>
+            <option value="{{ d.id }}" data-materias='[{% for m in d.materias_activas %}{"id":{{ m.id }},"nombre":"{{ m.nombre|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'>{{ d.nombre }}</option>
           {% endfor %}
         </select>
         <div class="ap-help">Solo filtra la lista de materias.</div>
