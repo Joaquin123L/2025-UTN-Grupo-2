@@ -20,7 +20,28 @@ import json
 from django.urls import reverse, reverse_lazy
 import json
 from django.utils.safestring import mark_safe
+from django.templatetags.static import static
 
+ICON_MAP = {
+    "archivo":       "admin_icons/archivo.svg",
+    "arquitectura":  "admin_icons/arquitectura.svg",
+    "basededatos":   "admin_icons/basededatos.svg",
+    "computadora":   "admin_icons/computadora.svg",
+    "electrica":     "admin_icons/electrica.svg",
+    "estadistica":   "admin_icons/estadistica.svg",
+    "funcion":       "admin_icons/funcion.svg",
+    "libro":         "admin_icons/libro.svg",
+    "mecanica":      "admin_icons/mecanica.svg",
+    "nube":          "admin_icons/nube.svg",
+    "numeros":       "admin_icons/numeros.svg",
+}
+
+def icon_url_from_choice(choice: str | None) -> str | None:
+    """Devuelve la URL /static/... del ícono elegido, o None si no existe."""
+    if not choice:
+        return None
+    path = ICON_MAP.get(choice.strip())
+    return static(path) if path else None
 
 
 class DepartmentListView(LoginRequiredMixin, ListView):
@@ -411,18 +432,21 @@ def dept_list(request):
 @login_required
 def dept_create(request):
     if request.method == "GET":
-        return render(request, "academics/department_form.html")
+        return render(request, "academics/department_form.html", {
+            "ICON_MAP": ICON_MAP,
+        })
 
     nombre = (request.POST.get("nombre") or "").strip()
-    icono = (request.POST.get("icono") or "").strip()
     imagen = request.FILES.get("imagen")  # opcional
+    choice = request.POST.get("icon_choice")
+    icono_final = icon_url_from_choice(choice)
 
     if not nombre:
         messages.error(request, "El nombre es obligatorio.")
-        return render(request, "academics/department_form.html", {"nombre": nombre, "icono": icono})
+        return render(request, "academics/department_form.html", {"nombre": nombre, "icono": icono_final, "ICON_MAP": ICON_MAP})
 
     try:
-        d = Department(nombre=nombre, icono=icono)
+        d = Department(nombre=nombre, icono=icono_final or None)
         if imagen:
             d.imagen = imagen
         d.save()
@@ -430,7 +454,7 @@ def dept_create(request):
         return redirect("academics:dept_list")
     except IntegrityError:
         messages.error(request, "Ya existe un departamento con ese nombre.")
-        return render(request, "academics/department_form.html", {"nombre": nombre, "icono": icono})
+        return render(request, "academics/department_form.html", {"ICON_MAP": ICON_MAP, "nombre": nombre, "icono": icono_final})
 
 @login_required
 def dept_update(request, pk: int):
@@ -438,19 +462,20 @@ def dept_update(request, pk: int):
 
     if request.method == "GET":
         return render(request, "academics/department_form.html", {
-            "obj": d, "nombre": d.nombre, "icono": d.icono
+            "obj": d, "nombre": d.nombre, "icono": d.icono, "ICON_MAP": ICON_MAP
         })
 
     nombre = (request.POST.get("nombre") or "").strip()
-    icono = (request.POST.get("icono") or "").strip()
     imagen = request.FILES.get("imagen")
+    choice = request.POST.get("icon_choice")         
+    icono_final = icon_url_from_choice(choice) 
 
     if not nombre:
         messages.error(request, "El nombre es obligatorio.")
-        return render(request, "academics/department_form.html", {"obj": d, "nombre": nombre, "icono": icono})
+        return render(request, "academics/department_form.html", {"obj": d, "nombre": nombre, "icono": icono_final, "ICON_MAP": ICON_MAP})
 
     d.nombre = nombre
-    d.icono = icono
+    d.icono = icono_final or None
     if imagen:
         d.imagen = imagen
 
@@ -460,7 +485,7 @@ def dept_update(request, pk: int):
         return redirect("academics:dept_list")
     except IntegrityError:
         messages.error(request, "Ya existe un departamento con ese nombre.")
-        return render(request, "academics/department_form.html", {"obj": d, "nombre": nombre, "icono": icono})
+        return render(request, "academics/department_form.html", {"obj": d, "nombre": nombre, "icono": icono_final, "ICON_MAP": ICON_MAP})
 
 @login_required
 def dept_delete(request, pk: int):
@@ -516,14 +541,15 @@ def materia_create(request):
         nombre = (request.POST.get("nombre") or "").strip()
         departamento_id = request.POST.get("departamento")
         descripcion = (request.POST.get("descripcion") or "").strip()
-        icono = (request.POST.get("icono") or "").strip()
         imagen = request.FILES.get("imagen")
+        choice = request.POST.get("icon_choice")         
+        icono_final = icon_url_from_choice(choice)
 
         # objeto temporal para repoblar el form si hay errores
         materia_tmp = Materia(
             nombre=nombre,
             descripcion=descripcion or None,
-            icono=icono or None,
+            icono=icono_final or None,
         )
         if departamento_id:
             try:
@@ -536,6 +562,7 @@ def materia_create(request):
             return render(request, "academics/materia_form.html", {
                 "materia": materia_tmp,
                 "departamentos": departamentos,
+                "ICON_MAP": ICON_MAP,
             })
 
         try:
@@ -543,7 +570,7 @@ def materia_create(request):
                 nombre=nombre,
                 departamento_id=int(departamento_id),
                 descripcion=descripcion or None,
-                icono=icono or None,
+                icono=icono_final or None,
             )
             if imagen:
                 m.imagen = imagen
@@ -555,12 +582,14 @@ def materia_create(request):
             return render(request, "academics/materia_form.html", {
                 "materia": materia_tmp,
                 "departamentos": departamentos,
+                "ICON_MAP": ICON_MAP,
             })
 
     # GET
     return render(request, "academics/materia_form.html", {
-        "materia": None,                      # <-- importante para “Nueva Materia”
+        "materia": None,                      
         "departamentos": departamentos,
+        "ICON_MAP": ICON_MAP,
     })
 
 
@@ -573,15 +602,16 @@ def materia_update(request, pk: int):
         nombre = (request.POST.get("nombre") or "").strip()
         departamento_id = request.POST.get("departamento")
         descripcion = (request.POST.get("descripcion") or "").strip()
-        icono = (request.POST.get("icono") or "").strip()
         imagen = request.FILES.get("imagen")
+        choice = request.POST.get("icon_choice")         
+        icono_final = icon_url_from_choice(choice) or materia.icono
 
         if not nombre or not departamento_id:
             messages.error(request, "Nombre y Departamento son obligatorios.")
             # reflejar lo editado sin perder lo actual
             materia.nombre = nombre
             materia.descripcion = descripcion or None
-            materia.icono = icono or None
+            materia.icono = icono_final or None
             try:
                 materia.departamento_id = int(departamento_id)
             except (TypeError, ValueError):
@@ -589,13 +619,14 @@ def materia_update(request, pk: int):
             return render(request, "academics/materia_form.html", {
                 "materia": materia,             # <-- clave para “Editar Materia” y precarga
                 "departamentos": departamentos,
+                "ICON_MAP": ICON_MAP,
             })
 
         try:
             materia.nombre = nombre
             materia.departamento_id = int(departamento_id)
             materia.descripcion = descripcion or None
-            materia.icono = icono or None
+            materia.icono = icono_final or None
             if imagen:
                 materia.imagen = imagen
             materia.save()
@@ -606,12 +637,14 @@ def materia_update(request, pk: int):
             return render(request, "academics/materia_form.html", {
                 "materia": materia,
                 "departamentos": departamentos,
+                "ICON_MAP": ICON_MAP,
             })
 
     # GET
     return render(request, "academics/materia_form.html", {
-        "materia": materia,                    # <-- objeto real
+        "materia": materia,                    
         "departamentos": departamentos,
+        "ICON_MAP": ICON_MAP,
     })
 
 
@@ -630,6 +663,7 @@ def materia_delete(request, pk: int):
         "object": materia,
         "cancel_url": reverse("academics:materia_list"),
         "title": "Eliminar Materia",
+        "ICON_MAP": ICON_MAP,
     })
 
 #-------- Comisión --------
@@ -659,6 +693,7 @@ def comision_list(request):
         "create_url": "academics:comision_create",
         "update_name": "academics:comision_update",
         "delete_name": "academics:comision_delete",
+        "ICON_MAP": ICON_MAP,
     })
 
 @login_required
@@ -672,22 +707,24 @@ def comision_create(request):
         return render(request, "academics/comision_form.html", {
             "departamentos": departamentos,
             "profesores": profesores,
+            "ICON_MAP": ICON_MAP,
         })
 
     # Datos de la comisión
     nombre = (request.POST.get("nombre") or "").strip()
-    icono = (request.POST.get("icono") or "").strip()
     imagen = request.FILES.get("imagen")
+    choice = request.POST.get("icon_choice")        
+    icono_final = icon_url_from_choice(choice)
 
     if not nombre:
         messages.error(request, "El nombre es obligatorio.")
         return render(request, "academics/comision_form.html", {
             "departamentos": departamentos, "profesores": profesores,
-            "nombre": nombre, "icono": icono
+            "nombre": nombre, "icono": icono_final, "ICON_MAP": ICON_MAP
         })
 
     try:
-        c = Comision(nombre=nombre, icono=icono)
+        c = Comision(nombre=nombre, icono=icono_final or None)
         if imagen:
             c.imagen = imagen
         c.save()
@@ -720,7 +757,7 @@ def comision_create(request):
         messages.error(request, "Ya existe una comisión con ese nombre.")
         return render(request, "academics/comision_form.html", {
             "departamentos": departamentos, "profesores": profesores,
-            "nombre": nombre, "icono": icono
+            "nombre": nombre, "icono": icono_final, "ICON_MAP": ICON_MAP
         })
 
 @login_required
@@ -742,22 +779,24 @@ def comision_update(request, pk: int):
             "departamentos": departamentos,
             "profesores": profesores,
             "asignaciones": asignaciones,
+            "ICON_MAP": ICON_MAP,
         })
 
     # actualizar comisión
     nombre = (request.POST.get("nombre") or "").strip()
-    icono = (request.POST.get("icono") or "").strip()
     imagen = request.FILES.get("imagen")
+    choice = request.POST.get("icon_choice")         
+    icono_final = icon_url_from_choice(choice)
 
     if not nombre:
         messages.error(request, "El nombre es obligatorio.")
         return render(request, "academics/comision_form.html", {
-            "obj": c, "nombre": nombre, "icono": icono,
-            "departamentos": departamentos, "profesores": profesores
+            "obj": c, "nombre": nombre, "icono": icono_final,
+            "departamentos": departamentos, "profesores": profesores, "ICON_MAP": ICON_MAP
         })
 
     c.nombre = nombre
-    c.icono = icono
+    c.icono = icono_final or None
     if imagen:
         c.imagen = imagen
 
@@ -767,8 +806,8 @@ def comision_update(request, pk: int):
     except IntegrityError:
         messages.error(request, "Ya existe una comisión con ese nombre.")
         return render(request, "academics/comision_form.html", {
-            "obj": c, "nombre": nombre, "icono": icono,
-            "departamentos": departamentos, "profesores": profesores
+            "obj": c, "nombre": nombre, "icono": icono_final,
+            "departamentos": departamentos, "profesores": profesores, "ICON_MAP": ICON_MAP
         })
 
     # --- Asignación opcional: Materia + Año + (docentes) ---
