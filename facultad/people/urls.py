@@ -21,6 +21,5 @@ urlpatterns = [
     path("profesor/<int:pk>/editar/", views.professor_form, name="professor_form"),
     path("profesor/<int:pk>/eliminar/", views.ProfessorDeleteView.as_view(), name="confirm_delete"),
     path("profesor/<str:username>/", views.perfil_profesor, name="perfil_profesor"),
-    
-    
+    path("check_email/", views.check_email, name="check_email"),
 ]
