@@ -4,20 +4,120 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="{% static 'academics/css/departamento.css' %}">
-{% endblock %}
+<style>
+/* ===== STARS (enteras) ===== */
+.ap-stars{ display:inline-flex; gap:3px; line-height:1; font-size:18px; }
+.ap-stars .star{ color:#e5e7eb; font-style:normal; }
+.ap-stars .star.on{ color:#f59e0b; }
 
+/* ===== LINKS ===== */
+.ap-link{ display:block; text-decoration:none; color:inherit; }
+
+/* ===== GRID LIST ===== */
+.ap-hlist{ display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
+
+/* ===== CHIP CARD (materias) ===== */
+.ap-card-chip{
+  position:relative;
+  background:#fff;
+  border:1px solid #e6e8ec;
+  border-radius:22px;
+  padding:16px 18px 14px;
+  box-shadow:0 8px 28px rgba(0,0,0,.08);
+  transition:transform .18s, box-shadow .18s;
+  overflow:hidden; /* evita desbordes del badge */
+  will-change:transform; /* suaviza hover en grid */
+}
+.ap-card-chip:hover{ transform:translateY(-1px); box-shadow:0 12px 28px rgba(0,0,0,.12); }
+
+.ap-chip-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;              /* <- evita solaparse título/badge */
+}
+.ap-chip-title{
+  font-weight:800; font-size:22px; line-height:1.15;
+  margin:0; flex:1 1 auto; min-width:0; 
+  word-break:break-word;       /* <- títulos largos no empujan */
+}
+
+/* Badge genérico (con chip) */
+.ap-badge{
+  flex:0 0 auto;
+  max-width:48%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+  color:#6b7280; background:#f3f4f6; border:1px solid #e5e7eb;
+  padding:6px 10px; border-radius:999px;
+}
+
+/* En “Materias mejor puntuadas” el badge del depto NO lleva recuadro */
+.ap-chip-header .ap-badge{
+  background:transparent; border:0; padding:0;
+  text-transform:none; letter-spacing:0; font-size:14px; font-weight:600;
+  max-width:100%;
+}
+
+.ap-rating-row{ display:flex; align-items:center; gap:12px; margin-top:14px; }
+.ap-score{ font-weight:800; font-size:20px; }
+
+.ap-pill{
+  display:inline-flex; align-items:center; gap:6px;
+  background:#fff;
+  border:1px solid #e5e7eb;
+  border-radius:999px;
+  padding:8px 12px;
+  box-shadow:0 10px 20px rgba(0,0,0,.10);
+}
+
+.ap-muted-small{ font-size:13px; color:#6b7280; margin-top:12px; }
+
+/* ===== PROF CARD ===== */
+.ap-prof-card{
+  display:grid;
+  grid-template-columns:72px 1fr;
+  align-items:center;
+  gap:16px;
+  background:#fff;
+  border:1px solid #e6e8ec;
+  border-radius:22px;
+  padding:18px 20px;
+  box-shadow:0 8px 28px rgba(0,0,0,.08);
+  transition:transform .18s, box-shadow .18s;
+}
+.ap-prof-card:hover{ transform:translateY(-1px); box-shadow:0 12px 28px rgba(0,0,0,.12); }
+
+.ap-avatar{ width:72px; height:72px; border-radius:999px; object-fit:cover; background:#f3f4f6; }
+
+.ap-prof-name{ font-weight:700; font-size:18px; line-height:1.2; }
+.ap-prof-meta{ color:#6b7280; margin-top:4px; }
+
+.ap-prof-foot{ margin-top:12px; }
+.ap-prof-foot .ap-rating-row{ margin-top:0; }
+.ap-prof-foot .ap-muted-small{ margin-top:8px; }
+
+/* Ajustes visuales sutiles */
+.ap-section-title{ margin:26px 0 14px; }
+
+/* ===== Responsive tweaks ===== */
+@media (max-width: 420px){
+  .ap-chip-title{ font-size:20px; }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="aa-container">
   <div class="aa-toolbar">
     <div class="aa-titles">
-  <h2 class="aa-h2">Departamentos:</h2>
-</div>
+      <h2 class="aa-h2">Departamentos:</h2>
+    </div>
 
     <div class="aa-search">
       <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M15.5 14h-.79l-.28-.27a6.471 6.471 0 0 0 1.57-4.23C15.99 6.01 13.48 3.5 10.5 3.5S5 6.01 5 9s2.51 5.5 5.5 5.5c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l4.25 4.25 1.27-1.27L15.5 14Zm-5 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14Z" />
+        <path d="M15.5 14h-.79l-.28-.27a6.471 6.471 0 0 0 1.57-4.23C15.99 6.01 13.48 3.5 10.5 3.5S5 6.01 5 9s2.51 5.5 5.5 5.5c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l4.25 4.25 1.27-1.27L15.5 14Zm-5 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14Z"/>
       </svg>
       <input id="search" type="text" placeholder="Buscar" autocomplete="off">
     </div>
@@ -25,20 +125,79 @@
 
   <section id="grid" class="aa-grid">
     {% for d in departments %}
-    {% url 'academics:subjects_by_dept' d.id as subj_url %}
-    {% include "academics/Components/card.html" with title=d.nombre image_url=d.imagen icon=d.icono badge=d.badge rating=d.calificacion opiniones=d.opiniones href=subj_url new_tab=False %}
+      {% url 'academics:subjects_by_dept' d.id as subj_url %}
+      {% include "academics/Components/card.html" with title=d.nombre image_url=d.imagen icon=d.icono badge=d.badge rating=d.calificacion opiniones=d.opiniones href=subj_url new_tab=False %}
     {% empty %}
       <p>No hay departamentos disponibles.</p>
     {% endfor %}
   </section>
-</div>
 
-<script>
-  const input = document.getElementById('search');
-  const cards = Array.from(document.querySelectorAll('.aa-card'));
-  input.addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    cards.forEach(c => c.style.display = c.dataset.name.includes(q) ? '' : 'none');
-  });
-</script>
+  <!-- ===== RANKING: MATERIAS ===== -->
+  <h2 class="ap-section-title">Materias mejor puntuadas</h2>
+  <div class="ap-hlist">
+    {% for m in top_materias %}
+      <a class="ap-link ap-card-chip" href="{% url 'academics:perfil_materia' m.id %}">
+        <div class="ap-chip-header">
+          <h3 class="ap-chip-title">{{ m.nombre }}</h3>
+          {% if m.departamento %}
+            <span class="ap-badge">{{ m.departamento.nombre }}</span>
+          {% endif %}
+        </div>
+
+        <div class="ap-rating-row">
+          <div class="ap-score">{{ m.promedio|floatformat:1 }}</div>
+          <span class="ap-pill">
+            <span class="ap-stars" aria-label="Puntaje {{ m.promedio|floatformat:1 }} de 5">
+              {% for _ in "12345" %}
+                <i class="star{% if forloop.counter <= m.promedio|default:0 %} on{% endif %}">★</i>
+              {% endfor %}
+            </span>
+          </span>
+        </div>
+
+        <div class="ap-muted-small">
+          <span class="kfmt" data-count="{{ m.cantidad }}">{{ m.cantidad }}</span> opiniones
+        </div>
+      </a>
+    {% empty %}
+      <div class="ap-muted">Aún no hay reseñas de materias.</div>
+    {% endfor %}
+  </div>
+
+  <!-- ===== RANKING: PROFES ===== -->
+  <h2 class="ap-section-title">Los mejores profes de la Facu</h2>
+  <div class="ap-hlist">
+    {% for p in top_profes %}
+      <a class="ap-link ap-prof-card" href="{% url 'people:perfil_profesor' p.user.username %}">
+        {% if p.user.profile_image %}
+          <img class="ap-avatar" src="{{ p.user.profile_image.url }}" alt="{{ p.user.get_full_name|default:p.user.username }}">
+        {% else %}
+          <div class="ap-avatar"></div>
+        {% endif %}
+
+        <div>
+          <div class="ap-prof-name">{{ p.user.get_full_name|default:p.user.username }}</div>
+
+          <div class="ap-prof-foot">
+            <div class="ap-rating-row">
+              <div class="ap-score">{{ p.promedio|floatformat:1 }}</div>
+              <span class="ap-pill">
+                <span class="ap-prof-stars ap-stars" aria-label="Puntaje {{ p.promedio|floatformat:1 }} de 5">
+                  {% for _ in "12345" %}
+                    <i class="star{% if forloop.counter <= p.promedio|default:0 %} on{% endif %}">★</i>
+                  {% endfor %}
+                </span>
+              </span>
+            </div>
+            <div class="ap-muted-small">
+              <span class="kfmt" data-count="{{ p.cantidad }}">{{ p.cantidad }}</span> opiniones
+            </div>
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      <div class="ap-muted">Aún no hay reseñas de profesores.</div>
+    {% endfor %}
+  </div>
+</div>
 {% endblock %}

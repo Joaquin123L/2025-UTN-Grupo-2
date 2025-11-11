@@ -59,7 +59,7 @@ class CustomSignupView(SignupView):
         # Lo usamos en el JS del template
         ctx["allowed_domains"] = list(self.VALID_EMAIL_DOMAINS)
         return ctx
-
+    
 
 register = CustomSignupView.as_view()
 

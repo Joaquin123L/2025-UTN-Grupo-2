@@ -20,13 +20,65 @@ import json
 from django.urls import reverse, reverse_lazy
 import json
 from django.utils.safestring import mark_safe
+from django.contrib.auth import get_user_model
 
-
+User = get_user_model()
 
 class DepartmentListView(LoginRequiredMixin, ListView):
     template_name = "academics/home.html"
     context_object_name = "departments"
     model = Department
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        # ---- TOP MATERIAS (promedio, y desempate por cantidad) ----
+        top_materias = (
+            Materia.objects
+            .annotate(
+                promedio=Avg(
+                    "resenas_items__puntuacion",
+                    filter=Q(resenas_items__target_type="MATERIA")
+                ),
+                cantidad=Count(
+                    "resenas_items",
+                    filter=Q(resenas_items__target_type="MATERIA")
+                )
+            )
+            .filter(cantidad__gt=0)
+            .order_by("-promedio", "-cantidad", "nombre")[:10]
+        )
+
+        # ---- TOP PROFES (TITULAR + JTP unificados) ----
+        items_prof = (
+            ResenaItem.objects
+            .filter(target_type__in=["TITULAR", "JTP"])
+            .annotate(prof_id=Coalesce("titular_id", "jtp_id"))
+        )
+
+        profesores_agregados = (
+            items_prof.values("prof_id")
+            .annotate(
+                promedio=Avg("puntuacion"),
+                cantidad=Count("id"),
+            )
+            .order_by("-promedio", "-cantidad", "prof_id")[:10]
+        )
+
+        users = {
+            u.id: u for u in User.objects.filter(
+                id__in=[r["prof_id"] for r in profesores_agregados]
+            )
+        }
+        top_profes = [
+            {"user": users[r["prof_id"]], "promedio": r["promedio"], "cantidad": r["cantidad"]}
+            for r in profesores_agregados
+            if users.get(r["prof_id"])
+        ]
+
+        ctx["top_materias"] = top_materias
+        ctx["top_profes"] = top_profes
+        return ctx
 
 class MateriasListView(LoginRequiredMixin, ListView):
     template_name = "academics/materias.html"
