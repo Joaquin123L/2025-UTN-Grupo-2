@@ -18,7 +18,7 @@ from collections import Counter
 from django.conf import settings
 from academics.plan_loader import load_plan_rows
 from better_profanity import profanity
-
+from django.http import JsonResponse
 from django.views import View
 from django.urls import NoReverseMatch 
 from allauth.account.views import SignupView
@@ -63,28 +63,49 @@ class CustomSignupView(SignupView):
 
 register = CustomSignupView.as_view()
 
+def check_email(request):
+    email = (request.GET.get("email") or "").strip().lower()
+    exists = User.objects.filter(email__iexact=email).exists()
+    return JsonResponse({"exists": exists})
+
+
 def login_view(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
-        user = None
-        user = authenticate(request, username=email, password=password)
-        if user is None:
-            try:
-                u = User.objects.get(email=email)
-                user = authenticate(request, username=u.get_username(), password=password)
-            except User.DoesNotExist:
-                user = None
+        # 1) ¿Existe el usuario por email?
+        try:
+            u = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            u = None
 
-        if user is not None and user.rol in [User.Role.ALUMNO]:
-            login(request, user)
+        if u is None:
+            # No existe usuario con ese correo
+            messages.error(request, "No existe un usuario registrado con ese correo.")
+            return render(request, "people/login.html", status=401)
+
+        # 2) Usuario existe: validamos contraseña
+        user = authenticate(request, username=u.get_username(), password=password)
+
+        if user is None:
+            messages.error(request, "La contraseña es incorrecta.")
+            return render(request, "people/login.html", status=401)
+
+        if not user.is_active:
+            messages.error(request, "La cuenta está inactiva. Contacte a un administrador.")
+            return render(request, "people/login.html", status=403)
+
+        # 3) Redirección por rol
+        login(request, user)
+        if user.rol in [User.Role.ALUMNO]:
             return redirect("academics:home")
-        elif user is not None and user.rol in [User.Role.ADMIN]:
-            login(request, user)
+        if user.rol in [User.Role.ADMIN]:
             return redirect("academics:admin_panel")
-        else:
-            messages.error(request, "Email o contraseña incorrectos.")
+
+        # (Por si hubiera otros roles no contemplados)
+        messages.error(request, "No tiene permisos para iniciar sesión en esta sección.")
+        return render(request, "people/login.html", status=403)
 
     return render(request, "people/login.html")
 
