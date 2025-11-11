@@ -177,10 +177,6 @@
 
         <div>
           <div class="ap-prof-name">{{ p.user.get_full_name|default:p.user.username }}</div>
-          <div class="ap-prof-meta">
-            Promedio {{ p.promedio|floatformat:1 }} •
-            <span class="kfmt" data-count="{{ p.cantidad }}">{{ p.cantidad }}</span> opiniones
-          </div>
 
           <div class="ap-prof-foot">
             <div class="ap-rating-row">
