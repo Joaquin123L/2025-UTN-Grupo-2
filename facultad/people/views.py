@@ -18,7 +18,7 @@ from collections import Counter
 from django.conf import settings
 from academics.plan_loader import load_plan_rows
 from better_profanity import profanity
-
+from django.http import JsonResponse
 from django.views import View
 from django.urls import NoReverseMatch 
 from allauth.account.views import SignupView
@@ -34,36 +34,78 @@ User = get_user_model()
 class CustomSignupView(SignupView):
     template_name = 'people/register.html'
 
+    # 👉 Ajustá esta tupla si la institución tiene más dominios válidos
+    VALID_EMAIL_DOMAINS = ("alu.frlp.utn.edu.ar",)
+
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             logout(request)
         return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        # Validación **server-side** (no saltable)
+        email = (form.cleaned_data.get("email") or "").strip().lower()
+        if not any(email.endswith(f"@{d}") for d in self.VALID_EMAIL_DOMAINS):
+            form.add_error(
+                "email",
+                f"Debe utilizar un correo institucional para registrarse "
+                f"(dominios permitidos: {', '.join(self.VALID_EMAIL_DOMAINS)})."
+            )
+            return self.form_invalid(form)
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        # Lo usamos en el JS del template
+        ctx["allowed_domains"] = list(self.VALID_EMAIL_DOMAINS)
+        return ctx
     
 
 register = CustomSignupView.as_view()
+
+def check_email(request):
+    email = (request.GET.get("email") or "").strip().lower()
+    exists = User.objects.filter(email__iexact=email).exists()
+    return JsonResponse({"exists": exists})
+
 
 def login_view(request):
     if request.method == "POST":
         email = (request.POST.get("email") or "").strip().lower()
         password = request.POST.get("password") or ""
 
-        user = None
-        user = authenticate(request, username=email, password=password)
-        if user is None:
-            try:
-                u = User.objects.get(email=email)
-                user = authenticate(request, username=u.get_username(), password=password)
-            except User.DoesNotExist:
-                user = None
+        # 1) ¿Existe el usuario por email?
+        try:
+            u = User.objects.get(email__iexact=email)
+        except User.DoesNotExist:
+            u = None
 
-        if user is not None and user.rol in [User.Role.ALUMNO]:
-            login(request, user)
+        if u is None:
+            # No existe usuario con ese correo
+            messages.error(request, "No existe un usuario registrado con ese correo.")
+            return render(request, "people/login.html", status=401)
+
+        # 2) Usuario existe: validamos contraseña
+        user = authenticate(request, username=u.get_username(), password=password)
+
+        if user is None:
+            messages.error(request, "La contraseña es incorrecta.")
+            return render(request, "people/login.html", status=401)
+
+        if not user.is_active:
+            messages.error(request, "La cuenta está inactiva. Contacte a un administrador.")
+            return render(request, "people/login.html", status=403)
+
+        # 3) Redirección por rol
+        login(request, user)
+        if user.rol in [User.Role.ALUMNO]:
             return redirect("academics:home")
-        elif user is not None and user.rol in [User.Role.ADMIN]:
-            login(request, user)
+        if user.rol in [User.Role.ADMIN]:
             return redirect("academics:admin_panel")
-        else:
-            messages.error(request, "Email o contraseña incorrectos.")
+
+        # (Por si hubiera otros roles no contemplados)
+        messages.error(request, "No tiene permisos para iniciar sesión en esta sección.")
+        return render(request, "people/login.html", status=403)
 
     return render(request, "people/login.html")
 
@@ -464,7 +506,7 @@ class SubirAvatarView(LoginRequiredMixin, View):
 def professor_list(request):
     profesores = (
         UserModel.objects
-        .filter(rol=UserModel.Role.PROFESOR)
+        .filter(rol=UserModel.Role.PROFESOR, is_active=True)
         .order_by("last_name", "first_name")
     )
     return render(request, "people/professor_list.html", {"object_list": profesores})
@@ -499,23 +541,17 @@ class ProfessorDeleteView(LoginRequiredMixin, DeleteView):
     login_url = "people:login"
 
     def get_queryset(self):
-        # Que la URL exista para cualquier profesor
         return UserModel.objects.filter(rol=UserModel.Role.PROFESOR)
 
-    def delete(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         self.object = self.get_object()
+        if self.object.is_active:
+            self.object.is_active = False
+            self.object.save(update_fields=["is_active"])
 
-        # Bloqueá si tiene vínculos
-        has_links = (
-            self.object.materias_como_titular.exists()
-            or self.object.materias_como_jtp.exists()
-            or self.object.materias_como_ayudante.exists()
-            or self.object.resenas_como_titular.exists()
-            or self.object.resenas_como_jtp.exists()
-        )
+        MateriaComisionAnio.objects.filter(titular=self.object, active=True).update(active=False)
+        MateriaComisionAnio.objects.filter(jtp=self.object, active=True).update(active=False)
+        MateriaComisionAnio.objects.filter(ayudante=self.object, active=True).update(active=False)
 
-        if has_links:
-            messages.error(request, "No se puede eliminar: el profesor tiene materias o reseñas asociadas.")
-            return redirect(self.success_url)
-
-        return super().delete(request, *args, **kwargs)
+        messages.success(request, "Profesor desactivado correctamente.")
+        return redirect(self.success_url)

@@ -44,9 +44,7 @@
             <a href="{% url 'people:professor_form' u.pk %}" class="ap-btn ap-btn-light" title="Editar">
               Editar
             </a>
-              {% if not u.materias_como_titular.exists and not u.materias_como_jtp.exists and not u.materias_como_ayudante.exists and not u.resenas_como_titular.exists and not u.resenas_como_jtp.exists %}
               <a href="{% url 'people:confirm_delete' u.pk %}" class="ap-btn ap-btn-danger">Eliminar</a>
-              {% endif %}
           </td>
         </tr>
         {% empty %}

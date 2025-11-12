@@ -11,9 +11,11 @@ class Department(models.Model):
     imagen = models.ImageField(upload_to="departments/", blank=True, null=True)
     icono = models.CharField(max_length=4096, blank=True, null=True) 
     created_at = models.DateTimeField(auto_now_add=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["nombre"]
+        verbose_name = "Departamento"
 
     def __str__(self):
         return self.nombre
@@ -26,10 +28,12 @@ class Materia(models.Model):
     icono = models.CharField(max_length=4096, blank=True, null=True)
     imagen = models.ImageField(upload_to="materias/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    active = models.BooleanField(default=True)
 
 
     class Meta:
         ordering = ["nombre"]
+        verbose_name = "Materia"
 
     def __str__(self):
         return self.nombre
@@ -39,9 +43,11 @@ class Comision(models.Model):
     nombre = models.CharField(max_length=120, unique=True)
     icono = models.CharField(max_length=4096, blank=True, null=True)
     imagen = models.ImageField(upload_to="materias/", blank=True, null=True)
+    active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ["nombre"]
+        verbose_name = "Comisión"
 
     def __str__(self):
         return self.nombre
@@ -51,6 +57,7 @@ class MateriaComisionAnio(models.Model):
     materia = models.ForeignKey(Materia, on_delete=models.CASCADE)
     comision = models.ForeignKey(Comision, on_delete=models.CASCADE)
     anio = models.PositiveSmallIntegerField()
+    active = models.BooleanField(default=True)
 
     titular = models.ForeignKey(
         Usuario,

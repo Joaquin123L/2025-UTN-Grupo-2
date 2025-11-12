@@ -38,8 +38,7 @@
               name="legajo"
               placeholder="Ingrese su legajo"
               value="{% if form.data.legajo %}{{ form.data.legajo }}{% endif %}"
-              autocomplete="off"
-            >
+              autocomplete="off">
             {% if form.errors.legajo %}
               {% for err in form.errors.legajo %}
                 <div class="invalid-feedback d-block">{{ err }}</div>
@@ -57,8 +56,7 @@
               placeholder="Ingrese su nombre"
               value="{% if form.data.first_name %}{{ form.data.first_name }}{% endif %}"
               autocomplete="off"
-              required
-            >
+              required>
             {% if form.errors.first_name %}
               {% for err in form.errors.first_name %}
                 <div class="invalid-feedback d-block">{{ err }}</div>
@@ -76,8 +74,7 @@
               placeholder="Ingrese su apellido"
               value="{% if form.data.last_name %}{{ form.data.last_name }}{% endif %}"
               autocomplete="off"
-              required
-            >
+              required>
             {% if form.errors.last_name %}
               {% for err in form.errors.last_name %}
                 <div class="invalid-feedback d-block">{{ err }}</div>
@@ -95,13 +92,16 @@
               placeholder="tu_usuario@alu.frlp.utn.edu.ar"
               required
               autocomplete="email"
-              value="{% if form.data.email %}{{ form.data.email }}{% endif %}"
-            >
+              value="{% if form.data.email %}{{ form.data.email }}{% endif %}">
             {% if form.errors.email %}
               {% for err in form.errors.email %}
                 <div class="invalid-feedback d-block">{{ err }}</div>
               {% endfor %}
             {% endif %}
+
+            <div id="domain-alert" class="alert alert-warning mt-2 d-none" role="alert">
+              Debe utilizar un correo institucional para registrarse.
+            </div>
           </div>
 
           <div class="mb-3">
@@ -114,8 +114,7 @@
                 name="password1"
                 placeholder="Ingrese su contraseña"
                 required
-                autocomplete="new-password"
-              >
+                autocomplete="new-password">
               <button type="button" class="password-toggle" onclick="togglePassword('id_password1','toggleIcon1')">
                 <i id="toggleIcon1" class="fa fa-eye"></i>
               </button>
@@ -137,8 +136,7 @@
                 name="password2"
                 placeholder="Repita su contraseña"
                 required
-                autocomplete="new-password"
-              >
+                autocomplete="new-password">
               <button type="button" class="password-toggle" onclick="togglePassword('id_password2','toggleIcon2')">
                 <i id="toggleIcon2" class="fa fa-eye"></i>
               </button>
@@ -159,22 +157,192 @@
       </div>
     </section>
   </main>
+<script>
+  // === Dominios permitidos desde Django (simple, sin JSON) ===
+  // Si no viene nada del contexto, usamos fallback.
+  var RAW_ALLOWED = "{% if allowed_domains %}{% for d in allowed_domains %}{{ d|escapejs }}{% if not forloop.last %},{% endif %}{% endfor %}{% endif %}";
+  const ALLOWED_DOMAINS = RAW_ALLOWED
+    ? RAW_ALLOWED.split(",").map(s => s.trim()).filter(Boolean)
+    : ["alu.frlp.utn.edu.ar"];
+
+  function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon  = document.getElementById(iconId);
+    if (!input || !icon) return;
+    if (input.type === "password") {
+      input.type = "text";
+      icon.classList.replace("fa-eye", "fa-eye-slash");
+    } else {
+      input.type = "password";
+      icon.classList.replace("fa-eye-slash", "fa-eye");
+    }
+  }
+
+  // ===== Validación de dominio institucional (client-side) =====
+  (function () {
+    const form      = document.getElementById("register-form");
+    const emailInput= document.getElementById("id_email");
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const alertBox  = document.getElementById("domain-alert");
+
+    const isInstitutional = (val) => {
+      const lower = (val || "").toLowerCase().trim();
+      // aceptamos si termina en @dominio permitido
+      return ALLOWED_DOMAINS.some(d => lower.endsWith("@" + d));
+    };
+
+    const showAlert = (show) => {
+      if (!alertBox) return;
+      alertBox.classList.toggle("d-none", !show);
+    };
+
+    const updateState = () => {
+      const v = emailInput.value.trim();
+      if (v.length === 0) {
+        showAlert(false);
+        submitBtn.disabled = true; // sin email -> deshabilitado
+        return;
+      }
+      const ok = isInstitutional(v);
+      showAlert(!ok);              // muestra alerta si NO es institucional
+      submitBtn.disabled = !ok;    // solo habilita cuando es institucional
+    };
+
+    // Estado inicial + listeners
+    submitBtn.disabled = true;
+    updateState();
+    emailInput.addEventListener("input", updateState);
+    emailInput.addEventListener("blur", updateState);
+
+    form.addEventListener("submit", (e) => {
+      const v = emailInput.value.trim();
+      if (!isInstitutional(v)) {
+        e.preventDefault();
+        showAlert(true);
+        submitBtn.disabled = true;
+        emailInput.focus();
+      }
+    });
+  })();
+</script>
 
   <script>
-    function togglePassword(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon  = document.getElementById(iconId);
-      if (!input || !icon) return;
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.remove('fa-eye'); 
-        icon.classList.add('fa-eye-slash');
+document.addEventListener("DOMContentLoaded", () => {
+  const emailInput = document.getElementById("id_email");
+  const password1 = document.getElementById("id_password1");
+  const password2 = document.getElementById("id_password2");
+  const submitBtn = document.querySelector(".btn-login");
+  const form = document.getElementById("register-form");
+
+  const popup = (msg) => {
+    const modal = document.createElement("div");
+    modal.className = "alert-modal";
+    modal.innerHTML = `
+      <div class="alert-box">
+        <p class="alert-text">${msg}</p>
+        <button class="alert-btn" onclick="this.closest('.alert-modal').remove()">Aceptar</button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  };
+
+  // 🔹 1) Verificar si el email ya está registrado (AJAX al endpoint de verificación)
+  emailInput.addEventListener("blur", async () => {
+    const email = emailInput.value.trim().toLowerCase();
+    if (!email) return;
+
+    try {
+      const res = await fetch(`/people/check_email/?email=${encodeURIComponent(email)}`);
+      const data = await res.json();
+
+      if (data.exists) {
+        popup("El correo ya está registrado. Inicie sesión o use otro correo.");
+        submitBtn.disabled = true;
       } else {
-        input.type = 'password';
-        icon.classList.remove('fa-eye-slash'); 
-        icon.classList.add('fa-eye');
+        submitBtn.disabled = false;
       }
+    } catch (err) {
+      console.error("Error al verificar el correo:", err);
     }
-  </script>
+  });
+
+  // 🔹 2) Validar contraseña antes del envío
+  form.addEventListener("submit", (e) => {
+    const pass = password1.value.trim();
+    const confirm = password2.value.trim();
+
+    const errors = [];
+    if (pass.length < 8)
+      errors.push("La contraseña debe tener al menos 8 caracteres.");
+    if (/^\d+$/.test(pass))
+      errors.push("La contraseña no puede estar compuesta solo por números.");
+    if (!/[A-Z]/.test(pass))
+      errors.push("Debe incluir al menos una letra mayúscula.");
+    if (!/[a-z]/.test(pass))
+      errors.push("Debe incluir al menos una letra minúscula.");
+    if (!/[0-9]/.test(pass))
+      errors.push("Debe incluir al menos un número.");
+    if (pass !== confirm)
+      errors.push("Las contraseñas no coinciden.");
+
+    if (errors.length > 0) {
+      e.preventDefault();
+      popup(errors.join("<br>"));
+    }
+  });
+});
+</script>
+
+<style>
+/* Modal de alerta elegante */
+.alert-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+}
+
+.alert-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px 32px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+  text-align: center;
+  max-width: 360px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.alert-text {
+  margin-bottom: 14px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #222;
+}
+
+.alert-btn {
+  background: #0d6efd;
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.alert-btn:hover {
+  background: #0b5ed7;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
 </body>
 </html>

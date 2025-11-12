@@ -1,5 +1,5 @@
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Count, Max, Value, OuterRef, Subquery, IntegerField, FloatField, Exists, Q
+from django.db.models import Avg, Count, Max, Value, OuterRef, Subquery, IntegerField, FloatField, Exists, Q, Prefetch
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils.timezone import localtime
@@ -43,11 +43,65 @@ def icon_url_from_choice(choice: str | None) -> str | None:
     path = ICON_MAP.get(choice.strip())
     return static(path) if path else None
 
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class DepartmentListView(LoginRequiredMixin, ListView):
     template_name = "academics/home.html"
     context_object_name = "departments"
     model = Department
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        # ---- TOP MATERIAS (promedio, y desempate por cantidad) ----
+        top_materias = (
+            Materia.objects
+            .annotate(
+                promedio=Avg(
+                    "resenas_items__puntuacion",
+                    filter=Q(resenas_items__target_type="MATERIA")
+                ),
+                cantidad=Count(
+                    "resenas_items",
+                    filter=Q(resenas_items__target_type="MATERIA")
+                )
+            )
+            .filter(cantidad__gt=0)
+            .order_by("-promedio", "-cantidad", "nombre")[:10]
+        )
+
+        # ---- TOP PROFES (TITULAR + JTP unificados) ----
+        items_prof = (
+            ResenaItem.objects
+            .filter(target_type__in=["TITULAR", "JTP"])
+            .annotate(prof_id=Coalesce("titular_id", "jtp_id"))
+        )
+
+        profesores_agregados = (
+            items_prof.values("prof_id")
+            .annotate(
+                promedio=Avg("puntuacion"),
+                cantidad=Count("id"),
+            )
+            .order_by("-promedio", "-cantidad", "prof_id")[:10]
+        )
+
+        users = {
+            u.id: u for u in User.objects.filter(
+                id__in=[r["prof_id"] for r in profesores_agregados]
+            )
+        }
+        top_profes = [
+            {"user": users[r["prof_id"]], "promedio": r["promedio"], "cantidad": r["cantidad"]}
+            for r in profesores_agregados
+            if users.get(r["prof_id"])
+        ]
+
+        ctx["top_materias"] = top_materias
+        ctx["top_profes"] = top_profes
+        return ctx
 
 class MateriasListView(LoginRequiredMixin, ListView):
     template_name = "academics/materias.html"
@@ -417,7 +471,7 @@ class AdminPanelView(TemplateView):
 @login_required
 def dept_list(request):
     q = (request.GET.get("q") or "").strip()
-    qs = Department.objects.all().order_by("nombre")
+    qs = Department.objects.filter(active=True).order_by("nombre")
     if q:
         qs = qs.filter(nombre__icontains=q)
 
@@ -498,7 +552,9 @@ def dept_delete(request, pk: int):
         })
 
     try:
-        d.delete()
+        d.active = False
+        d.save()
+        Materia.objects.filter(departamento=d).update(active=False)
         messages.success(request, "Se eliminó correctamente.")
     except (ProtectedError, IntegrityError):
         messages.error(request, "No se pudo eliminar: hay materias asignadas a este departamento.")
@@ -512,7 +568,7 @@ def materia_list(request):
 
     qs = (Materia.objects
             .select_related("departamento")
-            .filter(eliminado=False)
+            .filter(eliminado=False, active=True)
             .order_by("nombre"))
 
     if q:
@@ -587,8 +643,8 @@ def materia_create(request):
 
     # GET
     return render(request, "academics/materia_form.html", {
-        "materia": None,                      
-        "departamentos": departamentos,
+        "materia": None,
+        "departamentos": Department.objects.filter(active=True).order_by("nombre"),
         "ICON_MAP": ICON_MAP,
     })
 
@@ -653,7 +709,10 @@ def materia_delete(request, pk: int):
     materia = get_object_or_404(Materia, pk=pk)
     if request.method == "POST":
         try:
-            materia.delete()
+            materia.active = False
+            materia.save()
+            #si esa materia pertenece a un mca cambiar el active de esos mca a false tambien
+            MateriaComisionAnio.objects.filter(materia=materia).update(active=False)
             messages.success(request, "Se eliminó correctamente.")
         except (ProtectedError, IntegrityError):
             messages.error(request, "No se pudo eliminar: hay comisiones/años asociados a esta materia.")
@@ -672,7 +731,7 @@ def comision_list(request):
     q = (request.GET.get("q") or "").strip()
     year = (request.GET.get("year") or "").strip()
 
-    qs = Comision.objects.all().order_by("nombre")
+    qs = Comision.objects.filter(active=True).order_by("nombre")
     if q:
         qs = qs.filter(nombre__icontains=q)
 
@@ -696,9 +755,23 @@ def comision_list(request):
         "ICON_MAP": ICON_MAP,
     })
 
+def _departamentos_con_materias_activas():
+    return (
+        Department.objects
+        .filter(active=True)
+        .order_by("nombre")
+        .prefetch_related(
+            Prefetch(
+                "materias",
+                queryset=Materia.objects.filter(active=True).only("id", "nombre", "departamento"),
+                to_attr="materias_activas",
+            )
+        )
+    )
+
 @login_required
 def comision_create(request):
-    departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
+    departamentos = _departamentos_con_materias_activas()
     profesores = (User.objects
                     .filter(rol=User.Role.PROFESOR, is_active=True)
                     .order_by("last_name", "first_name"))
@@ -844,7 +917,11 @@ def comision_delete(request, pk: int):
         })
 
     try:
-        c.delete()
+        #cambiamos active a False en lugar de eliminar
+        c.active = False
+        c.save()
+        MateriaComisionAnio.objects.filter(comision=c).update(active=False)
+        
         messages.success(request, "Se eliminó correctamente.")
     except (ProtectedError, IntegrityError):
         messages.error(request, "No se pudo eliminar: hay asignaciones (Materia+Año) vinculadas.")

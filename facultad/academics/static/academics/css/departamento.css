@@ -255,3 +255,112 @@
         gap: 20px;
     }
 }
+
+/* ===== BLOQUE DE RANKING (Materias y Profes) ===== */
+
+.ap-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 40px 4px 14px;
+}
+
+.ap-hlist {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 6px 2px;
+  scroll-snap-type: x mandatory;
+}
+
+.ap-hlist::-webkit-scrollbar {
+  height: 6px;
+}
+.ap-hlist::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.ap-card-chip {
+  min-width: 240px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  background: #fff;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ap-card-chip:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.ap-chip-title {
+  font-weight: 700;
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+
+.ap-chip-sub {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.ap-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.ap-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ap-muted-small {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+
+.ap-stars {
+  display: flex;
+  gap: 2px;
+}
+.ap-stars svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---- Tarjeta de profesores ---- */
+.ap-prof-card {
+  min-width: 300px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  background: #fff;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.ap-prof-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.ap-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #f3f4f6;
+}
