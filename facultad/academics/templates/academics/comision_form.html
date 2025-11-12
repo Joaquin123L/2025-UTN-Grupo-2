@@ -35,11 +35,18 @@
       </div>
 
       <div class="ap-field">
-        <label class="ap-label">Icono (opcional)</label>
-        <input class="ap-input" type="text" name="icono"
-               value="{% if icono %}{{ icono }}{% elif com %}{{ com.icono }}{% endif %}"
-               placeholder="SVG, texto o URL">
-      </div>
+      <label class="ap-label">Ícono </label>
+        <select class="ap-select ap-select2" name="icon_choice" id="materia-icon-choice">
+          <option value="">— Seleccionar —</option>
+          {% for key, path in ICON_MAP.items %}
+            {% static path as url %}
+            <option value="{{ key }}" data-url="{{ url }}"
+                    {% if materia and materia.icono == url %}selected{% endif %}>
+              {{ key|capfirst }}
+            </option>
+          {% endfor %}
+        </select>
+    </div>
 
       <div class="ap-field">
         <label class="ap-label">Imagen (opcional)</label>
@@ -182,5 +189,37 @@
     fillMaterias(this.value);
   });
 })();
+</script>
+<script>
+  const selC = document.getElementById('comision-icon-choice');
+  const prevC = document.getElementById('comision-icon-preview');
+  if (selC) selC.addEventListener('change', () => {
+    const opt = selC.options[selC.selectedIndex];
+    const url = opt?.dataset?.url || '';
+    prevC.innerHTML = url ? `<img src="${url}" style="width:36px;height:36px;">` : '';
+  });
+</script>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link  href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(function () {
+  function fmtIcon (state) {
+    if (!state.id) return state.text;
+    const url = state.element.dataset.url;
+    return url ? `<img src="${url}" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"> ${state.text}` : state.text;
+  }
+
+  $('#materia-icon-choice').select2({
+    width: '100%',
+    minimumResultsForSearch: Infinity,
+    templateResult: fmtIcon,
+    templateSelection: fmtIcon,
+    dropdownParent: $('.ap-card'),      
+    dropdownPosition: 'below',          
+    escapeMarkup: m => m
+  });
+});
 </script>
 {% endblock %}
