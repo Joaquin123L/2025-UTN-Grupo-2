@@ -769,6 +769,7 @@ def _departamentos_con_materias_activas():
         )
     )
 
+
 @login_required
 def comision_create(request):
     departamentos = _departamentos_con_materias_activas()
@@ -836,7 +837,7 @@ def comision_create(request):
 @login_required
 def comision_update(request, pk: int):
     c = get_object_or_404(Comision, pk=pk)
-    departamentos = Department.objects.prefetch_related("materias").order_by("nombre")
+    departamentos = _departamentos_con_materias_activas()
     profesores = (User.objects
                     .filter(rol=User.Role.PROFESOR, is_active=True)
                     .order_by("last_name", "first_name"))
